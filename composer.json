@@ -1,5 +1,5 @@
 {
-    "name": "railsphp/railsphp",
+    "name": "myimouto/railsphp",
     "require": {
         "php": ">=5.4.0",
         "zendframework/zend-validator": "2.2.*",
