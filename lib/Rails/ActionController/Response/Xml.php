@@ -18,6 +18,7 @@ class Xml extends Base
                     $model->toXml(['builder' => $this->_xml, 'skip_instruct' => true]);
                 }
             });
+            
         } else
             $this->_xml = new \Rails\Xml\Xml($el, $this->_params);
     }

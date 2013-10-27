@@ -41,7 +41,7 @@ class Xml
         if (!$content) {
             $this->_buffer .= ' />';
         } else {
-            $this->_buffer .= ">\n";
+            $this->_buffer .= ">";
             
             if (is_string($content))
                 $this->_buffer .= $content;

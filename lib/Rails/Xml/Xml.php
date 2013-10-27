@@ -57,6 +57,8 @@ class Xml
         foreach ($this->_attrs as $name => $val) {
             if (is_bool($val))
                 $val = $val ? 'true' : 'false';
+            elseif (is_array($val))
+                $val = implode(' ', $val);
             elseif (!is_scalar($val))
                 $val = '';
             

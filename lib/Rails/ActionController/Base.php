@@ -674,6 +674,9 @@ abstract class Base extends ActionController
             case 'xml':
                 $this->contentType = self::CONTENT_TYPE_XML;
                 array_unshift($this->_response_params, $main_param);
+                if (isset($this->render_params['root'])) {
+                    $this->_response_params['root'] = $this->render_params['root'];
+                }
                 $class = "Rails\ActionController\Response\Xml";
                 break;
             

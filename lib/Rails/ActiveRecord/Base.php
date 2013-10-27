@@ -504,7 +504,6 @@ abstract class Base
     public function toXml(array $params = [])
     {
         if (!isset($params['attributes'])) {
-            // $this->_merge_model_attributes();
             $attrs = $this->attributes();
         } else {
             $attrs = $params['attributes'];
