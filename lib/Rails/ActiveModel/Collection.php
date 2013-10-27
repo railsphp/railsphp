@@ -250,7 +250,6 @@ class Collection implements \ArrayAccess, \Iterator
             return;
         
         $t = get_class($this->current());
-        $t = $t::t();
         
         $xml = '<?xml version="1.0" encoding="UTF-8"?>';
         $xml .= '<' . $t . '>';
