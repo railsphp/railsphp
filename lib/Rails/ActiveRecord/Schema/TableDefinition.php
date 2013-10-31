@@ -1,7 +1,7 @@
 <?php
 namespace Rails\ActiveRecord\Schema;
 
-use Zend\Db\Sql\Ddl\Column;
+use Zend\Db\Sql\Ddl\Column as ZfColumn;
 use Zend\Db\Sql\Ddl\Constraint;
 use Rails\ActiveRecord\Exception;
 
@@ -27,11 +27,15 @@ class TableDefinition
     {
         switch ($type) {
             case 'varchar':
-                $column = new Column\Varchar($name, $options['limit']);
+                $column = new ZfColumn\Varchar($name, $options['limit']);
                 break;
             
             case 'integer':
-                $column = new Column\Integer($name);
+                $column = new ZfColumn\Integer($name);
+                break;
+            
+            case 'datetime':
+                $column = new Column\DateTime($name);
                 break;
             
             default:
