@@ -158,7 +158,14 @@ trait AttributeMethods
         } elseif ((string)$this->getAttribute($name) != (string)$value) {
             $this->setChangedAttribute($name, $this->$name);
         }
-        $this->attributes[$name] = $value;
+        
+        # If setter exists for this attribute, it will have to set the attribute itself.
+        if ($setter = $this->setterExists($name)) {
+            $this->$setter($value);
+        } else {
+            $this->attributes[$name] = $value;
+        }
+        
         return $this;
     }
     
