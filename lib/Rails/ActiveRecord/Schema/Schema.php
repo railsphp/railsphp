@@ -15,13 +15,12 @@ class Schema
     
     protected $sql;
     
-    public function __construct(ActiveRecord\Connection $connection = null)
+    public function __construct(\Rails\ActiveRecord\Connection $connection = null)
     {
         if (!$connection) {
             $connection = ActiveRecord::connection(Rails::env());
         }
         $this->connection = $connection;
-        
         $this->buildZfAdapter();
     }
     
@@ -65,12 +64,70 @@ class Schema
     
     public function addColumn($tableName, $name, $type, array $options = [])
     {
+        $column = $this->getColumnDefinition($name, $type, $options);
         
+        $ddl = new Ddl\AlterTable($tableName);
+        $ddl->addColumn($column);
+        
+        $this->queryAdapter($ddl);
     }
     
     public function addIndex($tableName, $columnName, array $options = [])
     {
+        if (!isset($options['name'])) {
+            $options['name'] = '';
+        }
         
+        if (!empty($options['unique'])) {
+            $index = new Ddl\Constraint\UniqueKey($columnName, $options['name']);
+        } elseif (!empty($options['primary_key'])) {
+            $index = new Constraint\PrimaryKey($columnName);
+        } else {
+            $index = new Constraint\IndexKey($columnName);
+        }
+        
+        $ddl = new Ddl\AlterTable($tableName);
+        $ddl->addConstraint($index);
+        
+        $this->queryAdapter($ddl);
+    }
+    
+    public function getColumnDefinition($name, $type, $options)
+    {
+
+        switch ($type) {
+            case 'varchar':
+                $column = new Ddl\Column\Varchar($name, $options['limit']);
+                break;
+            
+            case 'integer':
+                $column = new Ddl\Column\Integer($name);
+                break;
+            
+            case 'datetime':
+                $column = new Column\DateTime($name);
+                break;
+            
+            case 'text':
+                $column = new Column\Text($name);
+                break;
+            
+            default:
+                throw new Exception\RuntimeException(
+                    sprintf("Unknown column type '%s'", $type)
+                );
+        }
+        return $column;
+    }
+    
+    public function tableExists($tableName)
+    {
+        return $this->connection->tableExists($tableName);
+    }
+    
+    public function execute()
+    {
+        return call_user_func_array([$this->connection, 'executeSql'], func_get_args());
     }
     
     protected function buildZfAdapter()
@@ -84,11 +141,6 @@ class Schema
         $this->sql = new Db\Sql\Sql(
             $this->adapter
         );
-        
-        // $select = $this->zfSql->select('posts')->where(['id' => 1]);
-        // $stmt = $this->zfSql->prepareStatementForSqlObject($select);
-        
-        // vp($stmt->execute()->getResource()->fetchAll());
     }
     
     protected function queryAdapter($ddl)

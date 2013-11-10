@@ -259,7 +259,7 @@ abstract class Base
         if (!self::$preventInit) {
             $this->init();
         } else {
-            self::$preventInit = true;
+            self::$preventInit = false;
         }
     }
     
@@ -608,18 +608,9 @@ abstract class Base
             return $current;
     }
     
-    public function runCallbacks($callback_name)
+    public function runCallbacks($callbackName, \Closure $block = null)
     {
-        $callbacks = array();
-        
-        $tmp = $this->callbacks();
-        if (isset($tmp[$callback_name])) {
-            $callbacks = $tmp[$callback_name];
-        }
-        
-        $callbacks = array_unique(array_filter(array_merge($callbacks, $this->_get_parents_callbacks($callback_name))));
-        
-        if ($callbacks) {
+        if ($callbacks = $this->getCallbacks($callbackName, 'before')) {
             foreach ($callbacks as $method) {
                 if (false === $this->$method()) {
                     return false;
@@ -627,25 +618,104 @@ abstract class Base
             }
         }
         
-        return true;
+        if ($block) {
+            $result = $block();
+        } else {
+            $result = true;
+        }
+        
+        if ($callbacks = $this->getCallbacks($callbackName, 'after')) {
+            foreach (array_reverse($callbacks) as $method) {
+                if (false === $this->$method()) {
+                    break;
+                }
+            }
+        }
+        
+        return $result;
     }
     
-    private function _get_parents_callbacks($callback_name)
+    public function getCallbacks($name, $kind)
     {
-        $all_callbacks = array();
-        if (($class = get_parent_class($this)) != 'Rails\ActiveRecord\Base') {
-          $class = self::cn();
-          $obj   = new $class();
-          while (($class = get_parent_class($obj)) != 'Rails\ActiveRecord\Base') {
-            $obj = new $class();
-            if ($callbacks = $obj->callbacks()) {
-              if (isset($callbacks[$callback_name]))
-                $all_callbacks = array_merge($callbacks, $callbacks[$callback_name]); 
-            }
-          }
+        $callbacks = $this->allCallbacks();
+        
+        $key = $kind . '_' . $name;
+        
+        if (isset($callbacks[$key])) {
+            return $callbacks[$key];
         }
-        return $all_callbacks;
+        return [];
     }
+    
+    // private function getParentsCallbacks()
+    // {
+        // $parentCallbacks = array();
+        
+        // if (($class = get_parent_class($this)) != __CLASS__) {
+            // $class = self::cn();
+            // $obj   = new $class();
+
+            // while (($class = get_parent_class($obj)) != __CLASS__) {
+                // self::$preventInit = true;
+                
+                // $obj = new $class();
+                // if ($callbacks = $obj->callbacks()) {
+                    #if (isset($callbacks[$callback_name]))
+                    // $parentCallbacks = array_merge($callbacks, $callbacks[$callback_name]); 
+                // }
+            // }
+        // }
+        // return $parentCallbacks;
+    // }
+    
+    /**
+     * Merges model's callbacks and "plugged" callbacks.
+     * If under production environment, the callbacks will be cached.
+     */
+    private function allCallbacks()
+    {
+        if (Rails::env() == 'production') {
+            return Rails::cache()->fetch('rails.models.' . get_called_class() . '.callbacks', function() {
+                return array_merge($this->callbacks(), $this->pluggedCallbacks());
+            });
+        } else {
+            return array_merge($this->callbacks(), $this->pluggedCallbacks());
+        }
+    }
+    
+    /**
+     * Any method that ends with "Callbacks" can return an array of
+     * callbacks. This is useful for traits that require to add some callbacks,
+     * so they don't have to be manually called by the class implementing the trait.
+     */
+    private function pluggedCallbacks()
+    {
+        $callbacks = [];
+        
+        foreach (self::getReflection()->getMethods() as $method) {
+            $methodName = $method->getName();
+            if (
+                strpos($methodName, 'Callbacks') === strlen($methodName) - 9
+                && strpos($method->getDeclaringClass()->getName(), 'Rails') !== 0
+            ) {
+                $callbacks = array_merge($callbacks, $this->$methodName());
+            }
+        }
+        
+        return $callbacks;
+    }
+    
+    // private function mergeAllCallbacks()
+    // {
+        // $parents = $this->getParentsCallbacks();
+        // $others  = $this->getPluggedCallbacks();
+        // return array_merge_recursive($parents, $others);
+    // }
+    
+    // private function filterCallbacks($allCallbacks, $name)
+    // {
+        // $
+    // }
     
     /**
      * @return bool
@@ -653,61 +723,63 @@ abstract class Base
      */
     private function _validate_data($action)
     {
-        if (!$this->runCallbacks('before_validation'))
-            return false;
+        // if (!$this->runCallbacks('before_validation'))
+            // return false;
         
-        $validation_success = true;
-        $modelClass = get_called_class();
-        $classProps = get_class_vars($modelClass);
-        
-        foreach ($this->validations() as $attrName => $validations) {
-            /**
-             * This should only happen when passing a custom validation method with
-             * no validation options.
-             */
-            if (is_int($attrName)) {
-                $attrName = $validations;
-                $validations = [];
-            }
+        return $this->runCallbacks('validation', function() use ($action) {
+            $validation_success = true;
+            $modelClass = get_called_class();
+            $classProps = get_class_vars($modelClass);
             
-            if (static::isAttribute($attrName) || array_key_exists($attrName, $classProps)) {
-                foreach ($validations as $type => $params) {
-                    if (!is_array($params)) {
-                        $params = [$params];
+            foreach ($this->validations() as $attrName => $validations) {
+                /**
+                 * This should only happen when passing a custom validation method with
+                 * no validation options.
+                 */
+                if (is_int($attrName)) {
+                    $attrName = $validations;
+                    $validations = [];
+                }
+                
+                if (static::isAttribute($attrName) || array_key_exists($attrName, $classProps)) {
+                    foreach ($validations as $type => $params) {
+                        if (!is_array($params)) {
+                            $params = [$params];
+                        }
+                        
+                        if ($modelClass::isAttribute($attrName)) {
+                            $value = $this->getAttribute($attrName);
+                        } else {
+                            $value = $this->$attrName;
+                        }
+                        
+                        $validation = new Validator($type, $value, $params);
+                        $validation->set_params($action, $this, $attrName);
+                        
+                        if (!$validation->validate()->success()) {
+                            $validation->set_error_message();
+                            $validation_success = false;
+                        }
                     }
-                    
-                    if ($modelClass::isAttribute($attrName)) {
-                        $value = $this->getAttribute($attrName);
-                    } else {
-                        $value = $this->$attrName;
+                } else {
+                    /**
+                     * The attrName passed isn't an attribute nor a property, so we assume it's a method.
+                     *
+                     * $attrName becomes the name of the method.
+                     * $validations becomes validation options.
+                     */
+                    if (!empty($validations['on']) && !in_array($action, $validations['on'])) {
+                        continue;
                     }
-                    
-                    $validation = new Validator($type, $value, $params);
-                    $validation->set_params($action, $this, $attrName);
-                    
-                    if (!$validation->validate()->success()) {
-                        $validation->set_error_message();
+                    // $this->getAttribute($attrName);
+                    $this->$attrName();
+                    if ($this->errors()->any()) {
                         $validation_success = false;
                     }
                 }
-            } else {
-                /**
-                 * The attrName passed isn't an attribute nor a property, so we assume it's a method.
-                 *
-                 * $attrName becomes the name of the method.
-                 * $validations becomes validation options.
-                 */
-                if (!empty($validations['on']) && !in_array($action, $validations['on'])) {
-                    continue;
-                }
-                // $this->getAttribute($attrName);
-                $this->$attrName();
-                if ($this->errors()->any()) {
-                    $validation_success = false;
-                }
             }
-        }
-        return $validation_success;
+            return $validation_success;
+        });
     }
     
     private function _create_do()

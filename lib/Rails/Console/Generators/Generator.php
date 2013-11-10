@@ -47,6 +47,10 @@ class Generator
                     Toolbox\DbTools::generateSchemaFiles();
                     break;
                 
+                case 'migration':
+                    $this->generateMigration();
+                    break;
+                
                 default:
                     $this->terminate(
                         sprintf("Unknown generator for %s", $argv[1])
@@ -57,6 +61,22 @@ class Generator
                 "Error: " . $e->getMessage()
             );
         }
+    }
+    
+    protected function generateMigration()
+    {
+        $rules = [
+            'name' => '',
+        ];
+        
+        $opts = $this->opts->addRules($rules);
+        $argv = $opts->getArguments();
+        
+        if (empty($argv[2])) {
+            $this->console->terminate("Missing migration name");
+        }
+        
+        \Rails\Generators\ActiveRecord\Migration\MigrationGenerator::generate($argv[2]);
     }
     
     protected function generateModel()
@@ -76,6 +96,10 @@ class Generator
         $options = $opts->getOptions();
         
         FileGenerators\ModelGenerator::generate($name, $options, $this->console);
+        
+        # Create migration
+        $migrName = 'create_' . $name::tableName();
+        \Rails\Generators\ActiveRecord\Migration\MigrationGenerator::generate($migrName);
     }
     
     protected function generateController()

@@ -78,15 +78,15 @@ final class Rails
         self::$publicPath = defined('RAILS_PUBLIC_PATH') ? RAILS_PUBLIC_PATH : self::$root . '/public';
         self::$publicPath = str_replace(DIRECTORY_SEPARATOR, '/', self::$publicPath);
         
-        # Set ZF2 path
-        if (defined("ZF2_PATH")) {
-            self::$zf2Path = ZF2_PATH;
-        }
+        // # Set ZF2 path
+        // if (defined("ZF2_PATH")) {
+            // self::$zf2Path = ZF2_PATH;
+        // }
         
-        # Set Symfony path
-        if (defined("SYMFONY_PATH")) {
-            self::$sfPath = SYMFONY_PATH;
-        }
+        // # Set Symfony path
+        // if (defined("SYMFONY_PATH")) {
+            // self::$sfPath = SYMFONY_PATH;
+        // }
         
         /**
          * Set environment.

@@ -4,6 +4,7 @@ namespace Rails\ActiveRecord\Schema;
 use Zend\Db\Sql\Ddl\Column as ZfColumn;
 use Zend\Db\Sql\Ddl\Constraint;
 use Rails\ActiveRecord\Exception;
+use Rails\ActiveRecord\Schema\Constraint as RailsConstraint;
 
 class TableDefinition
 {
@@ -25,88 +26,82 @@ class TableDefinition
      */
     public function column($name, $type, array $options = [])
     {
-        switch ($type) {
-            case 'varchar':
-                $column = new ZfColumn\Varchar($name, $options['limit']);
-                break;
-            
-            case 'integer':
-                $column = new ZfColumn\Integer($name);
-                break;
-            
-            case 'datetime':
-                $column = new Column\DateTime($name);
-                break;
-            
-            default:
-                throw new Exception\RuntimeException(
-                    sprintf("Unknown column type '%s'", $type)
-                );
-        }
-        
-        
+        $column = $this->schema->getColumnDefinition($name, $type, $options);
         $this->table->addColumn($column);
+        return $this;
     }
     
     public function timestamps(array $options = [])
     {
         $this->column('created_at', 'datetime', $options);
         $this->column('updated_at', 'datetime', $options);
+        return $this;
     }
     
     public function string($name, $limit = 255, $type = 'varchar', array $options = [])
     {
         $this->column($name, $type, array_merge($options, ['limit' => $limit]));
+        return $this;
     }
     
     public function text($name, array $options = [])
     {
         $this->column($name, 'text', $options);
+        return $this;
     }
     
     public function integer($name, array $options = [])
     {
         $this->column($name, 'integer', $options);
+        return $this;
     }
     
     public function float($name, array $options = [])
     {
         $this->column($name, 'float', $options);
+        return $this;
     }
     
     public function decimal($name, array $options = [])
     {
         $this->column($name, 'decimal', $options);
+        return $this;
     }
     
     public function datetime($name, array $options = [])
     {
         $this->column($name, 'datetime', $options);
+        return $this;
     }
     
     public function timestamp($name, array $options = [])
     {
         $this->column($name, 'timestamp', $options);
+        return $this;
     }
     
     public function time($name, array $options = [])
     {
         $this->column($name, 'time', $options);
+        return $this;
     }
     
     public function date($name, array $options = [])
     {
         $this->column($name, 'date', $options);
+        return $this;
     }
     
     public function binary($name, array $options = [])
     {
         $this->column($name, 'binary', $options);
+        return $this;
     }
     
     public function boolean($name, array $options = [])
     {
         $this->column($name, 'boolean', $options);
+        return $this;
     }
     
     public function primaryKey($name, $type = 'integer', array $options = [])
@@ -115,5 +110,14 @@ class TableDefinition
         $this->table->addConstraint(
             new Constraint\PrimaryKey($name)
         );
+        return $this;
+    }
+    
+    public function index($columnName, array $options = [])
+    {
+        $this->table->addConstraint(
+            new RailsConstraint\IndexKey($columnName)
+        );
+        return $this;
     }
 }

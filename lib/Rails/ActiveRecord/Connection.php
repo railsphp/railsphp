@@ -232,6 +232,12 @@ class Connection
         return $this->name;
     }
     
+    public function tableExists($tableName)
+    {
+        $class = "Rails\ActiveRecord\Adapter\\" . $this->adapterName() . "\Table";
+        return $class::exists($this, $tableName);
+    }
+    
     protected function _parse_query_multimark(&$query, array &$params)
     {
         # If the number of tokens isn't equal to parameters, ignore
