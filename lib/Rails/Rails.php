@@ -1,9 +1,9 @@
 <?php
 /**
- * PHP on Rails
+ * RailsPHP Framework
  *
  * This is a Ruby on Rails-like framework.
- * http://code.google.com/p/php-on-rails/
+ * https://github.com/railsphp/railsphp
  */
 use Rails\Config\Config;
  
@@ -40,22 +40,6 @@ final class Rails
      */
     static private $publicPath;
     
-    /**
-     * Path to Zend library.
-     * Defaults to Rails::root() . '/vendor/ZF2/library/Zend'
-     *
-     * @var string
-     */
-    // static private $zf2Path;
-    
-    /**
-     * Path to Symfony library.
-     * Defaults to Rails::root() . '/vendor/Symfony'
-     *
-     * @var string
-     */
-    // static private $sfPath;
-    
     static private $serviceManager;
     
     static private $cli = false;
@@ -77,16 +61,6 @@ final class Rails
         # Set public path
         self::$publicPath = defined('RAILS_PUBLIC_PATH') ? RAILS_PUBLIC_PATH : self::$root . '/public';
         self::$publicPath = str_replace(DIRECTORY_SEPARATOR, '/', self::$publicPath);
-        
-        // # Set ZF2 path
-        // if (defined("ZF2_PATH")) {
-            // self::$zf2Path = ZF2_PATH;
-        // }
-        
-        // # Set Symfony path
-        // if (defined("SYMFONY_PATH")) {
-            // self::$sfPath = SYMFONY_PATH;
-        // }
         
         /**
          * Set environment.
@@ -384,35 +358,6 @@ final class Rails
         # Set loader.
         require self::$path . '/Loader/Loader.php';
         
-        # Guessing ZF2 and Symfony paths
-        // if (self::$zf2Path) {
-            // $zf2Path = self::$zf2Path;
-        // } else {
-            // $zf2Path = realpath(self::$path . '/../../../ZF2/library');
-            // if (!$zf2Path) {
-                // throw new Rails\Exception\RuntimeException(
-                    // sprintf(
-                        // "Can't find path to ZF2 library (tried: %s)",
-                        // $zf2Path
-                    // )
-                // );
-            // }
-        // }
-        
-        // if (self::$sfPath) {
-            // $sfPath = self::$sfPath;
-        // } else {
-            // $sfPath = realpath(self::$path . '/../../..');
-            // if (!$sfPath) {
-                // throw new Rails\Exception\RuntimeException(
-                    // sprintf(
-                        // "Can't find path to Symfony (tried: %s)",
-                        // $sfPath
-                    // )
-                // );
-            // }
-        // }
-        
         self::$loader = new Rails\Loader\Loader([
             dirname(self::$path),
             self::$config->paths->models->toString(),
@@ -420,14 +365,13 @@ final class Rails
             self::$config->paths->controllers->toString(),
             self::$config->paths->mailers->toString(),
             self::$root . '/lib',
-            self::$root . '/vendor',
-            // $zf2Path,
-            // $sfPath,
+            self::$root . '/vendor'
         ]);
         
-        $autoloadFile = defined("COMPOSER_AUTOLOAD_FILE") ?
-                        COMPOSER_AUTOLOAD_FILE :
-                        Rails::path() . '/../../../../autoload.php';
+        # Set Composer autoloader.
+        $autoloadFile = defined("COMPOSER_AUTOLOADER") ?
+                        COMPOSER_AUTOLOADER :
+                        Rails::root() . '/vendor/autoload.php';
         self::$loader->setComposerAutoload(require $autoloadFile);
         
         spl_autoload_register([Rails::loader(), 'loadClass']);
