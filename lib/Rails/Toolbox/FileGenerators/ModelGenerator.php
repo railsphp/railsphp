@@ -94,6 +94,7 @@ class ModelGenerator extends AbstractGenerator
 class %className% extends %parent%
 {
     
-}';
+}
+';
     }
 }

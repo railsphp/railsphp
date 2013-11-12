@@ -94,10 +94,13 @@ class Schema
     
     public function getColumnDefinition($name, $type, $options)
     {
-
         switch ($type) {
             case 'varchar':
                 $column = new Ddl\Column\Varchar($name, $options['limit']);
+                break;
+            
+            case 'char':
+                $column = new Ddl\Column\Char($name, $options['limit']);
                 break;
             
             case 'integer':

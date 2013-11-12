@@ -417,23 +417,47 @@ abstract class Base
                 // return false;
         // }
         
-        if ($this->isNewRecord()) {
-            if (!$this->_create_do($opts))
-                return false;
+        if (empty($opts['skip_callbacks'])) {
+            return $this->runCallbacks('save', function() use ($opts) {
+                if ($this->isNewRecord()) {
+                    if (!$this->_create_do($opts))
+                        return false;
+                } else {
+                    if (!$this->_validate_data('save', $opts))
+                        return false;
+                    
+                    // return $this->runCallbacks('save', function() {
+                    if (!$this->_save_do($opts))
+                        return false;
+                    // });
+                    // } else {
+                    // }
+                    // if (empty($opts['skip_callbacks'])) {
+                        // if (!$this->runCallbacks('before_save'))
+                            // return false;
+                    // }
+                    // if (!$this->_save_do($opts))
+                        // return false;
+                    // if (empty($opts['skip_callbacks'])) {
+                        // $this->runCallbacks('after_save');
+                    // }
+                }
+                return true;
+            });
         } else {
-            if (!$this->_validate_data('save'))
-                return false;
-            if (empty($opts['skip_callbacks'])) {
-                if (!$this->runCallbacks('before_save'))
+            if ($this->isNewRecord()) {
+                if (!$this->_create_do($opts))
+                    return false;
+            } else {
+                if (!$this->_validate_data('save'))
+                    return false;
+                
+                if (!$this->_save_do($opts))
                     return false;
             }
-            if (!$this->_save_do($opts))
-                return false;
-            if (empty($opts['skip_callbacks'])) {
-                $this->runCallbacks('after_save');
-            }
+            
+            return true;
         }
-        return true;
     }
     
     /**
@@ -611,7 +635,19 @@ abstract class Base
     public function runCallbacks($callbackName, \Closure $block = null)
     {
         if ($callbacks = $this->getCallbacks($callbackName, 'before')) {
-            foreach ($callbacks as $method) {
+            foreach ($callbacks as $method => $params) {
+                if (is_int($method)) {
+                    $method = $params;
+                    $params = [];
+                }
+                
+                # If blocks (Closure) must return true in order for the method to be executed.
+                if (isset($params['if'])) {
+                    if (true !== $params['if']()) {
+                        continue;
+                    }
+                }
+                
                 if (false === $this->$method()) {
                     return false;
                 }
@@ -721,138 +757,148 @@ abstract class Base
      * @return bool
      * @see validations()
      */
-    private function _validate_data($action)
+    private function _validate_data($action, array $opts = [])
     {
         // if (!$this->runCallbacks('before_validation'))
             // return false;
-        
-        return $this->runCallbacks('validation', function() use ($action) {
-            $validation_success = true;
-            $modelClass = get_called_class();
-            $classProps = get_class_vars($modelClass);
-            
-            foreach ($this->validations() as $attrName => $validations) {
-                /**
-                 * This should only happen when passing a custom validation method with
-                 * no validation options.
-                 */
-                if (is_int($attrName)) {
-                    $attrName = $validations;
-                    $validations = [];
-                }
+        return $this->runCallbacks('validation_on_' . $action, function() use ($action) {
+            return $this->runCallbacks('validation', function() use ($action) {
+                $validation_success = true;
+                $modelClass = get_called_class();
+                $classProps = get_class_vars($modelClass);
                 
-                if (static::isAttribute($attrName) || array_key_exists($attrName, $classProps)) {
-                    foreach ($validations as $type => $params) {
-                        if (!is_array($params)) {
-                            $params = [$params];
+                foreach ($this->validations() as $attrName => $validations) {
+                    /**
+                     * This should only happen when passing a custom validation method with
+                     * no validation options.
+                     */
+                    if (is_int($attrName)) {
+                        $attrName = $validations;
+                        $validations = [];
+                    }
+                    
+                    if (static::isAttribute($attrName) || array_key_exists($attrName, $classProps)) {
+                        foreach ($validations as $type => $params) {
+                            if (!is_array($params)) {
+                                $params = [$params];
+                            }
+                            
+                            if ($modelClass::isAttribute($attrName)) {
+                                $value = $this->getAttribute($attrName);
+                            } else {
+                                $value = $this->$attrName;
+                            }
+                            
+                            $validation = new Validator($type, $value, $params);
+                            $validation->set_params($action, $this, $attrName);
+                            
+                            if (!$validation->validate()->success()) {
+                                $validation->set_error_message();
+                                $validation_success = false;
+                            }
                         }
-                        
-                        if ($modelClass::isAttribute($attrName)) {
-                            $value = $this->getAttribute($attrName);
-                        } else {
-                            $value = $this->$attrName;
+                    } else {
+                        /**
+                         * The attrName passed isn't an attribute nor a property, so we assume it's a method.
+                         *
+                         * $attrName becomes the name of the method.
+                         * $validations becomes validation options.
+                         */
+                        if (!empty($validations['on']) && !in_array($action, $validations['on'])) {
+                            continue;
                         }
-                        
-                        $validation = new Validator($type, $value, $params);
-                        $validation->set_params($action, $this, $attrName);
-                        
-                        if (!$validation->validate()->success()) {
-                            $validation->set_error_message();
+                        // $this->getAttribute($attrName);
+                        $this->$attrName();
+                        if ($this->errors()->any()) {
                             $validation_success = false;
                         }
                     }
-                } else {
-                    /**
-                     * The attrName passed isn't an attribute nor a property, so we assume it's a method.
-                     *
-                     * $attrName becomes the name of the method.
-                     * $validations becomes validation options.
-                     */
-                    if (!empty($validations['on']) && !in_array($action, $validations['on'])) {
-                        continue;
-                    }
-                    // $this->getAttribute($attrName);
-                    $this->$attrName();
-                    if ($this->errors()->any()) {
-                        $validation_success = false;
-                    }
                 }
-            }
-            return $validation_success;
+                return $validation_success;
+            });
+            // vde($a);
+            // return $a;
         });
     }
     
     private function _create_do()
     {
-        if (!$this->runCallbacks('before_validation_on_create')) {
-            return false;
-        } elseif (!$this->_validate_data('create')) {
-            return false;
-        }
+        // if (!$this->runCallbacks('before_validation_on_create')) {
+            // return false;
+        // } elseif (!$this->_validate_data('create')) {
+            // return false;
+        // }
         
-        $this->runCallbacks('after_validation_on_create');
+        // $this->runCallbacks('after_validation_on_create');
         
-        if (!$this->runCallbacks('before_save'))
-            return false;
+        // if (!$this->runCallbacks('before_save'))
+            // return false;
         
-        if (!$this->runCallbacks('before_create'))
-            return false;
+        // if (!$this->runCallbacks('before_create'))
+            // return false;
         
-        $this->_check_time_column('created_at');
-        $this->_check_time_column('updated_at');
-        $this->_check_time_column('created_on');
-        $this->_check_time_column('updated_on');
-        
-        $cols_values = $cols_names = array();
-        
-        // $this->_merge_model_attributes();
-        
-        foreach ($this->attributes() as $attr => $val) {
-            $proper = static::properAttrName($attr);
-            if (!static::table()->columnExists($proper)) {
-                continue;
-            }
-            $cols_names[] = '`'.$attr.'`';
-            $cols_values[] = $val;
-            $init_attrs[$attr] = $val;
-        }
-        
-        if (!$cols_values)
-            return false;
-        
-        $binding_marks = implode(', ', array_fill(0, (count($cols_names)), '?'));
-        $cols_names = implode(', ', $cols_names);
-        
-        $sql = 'INSERT INTO `'.static::tableName().'` ('.$cols_names.') VALUES ('.$binding_marks.')';
-        
-        array_unshift($cols_values, $sql);
-        
-        static::connection()->executeSql($cols_values);
-        
-        $id = static::connection()->lastInsertId();
-        
-        $primary_key = static::table()->primaryKey();
-        
-        if ($primary_key && count($primary_key) == 1) {
-            if (!$id) {
-                $this->errors()->addToBase('Couldn\'t retrieve new primary key.');
+        return $this->runCallbacks('create', function() {
+            if (!$this->_validate_data('create'))
                 return false;
+            
+            $this->_check_time_column('created_at');
+            $this->_check_time_column('updated_at');
+            $this->_check_time_column('created_on');
+            $this->_check_time_column('updated_on');
+            
+            $cols_values = $cols_names = array();
+            
+            // $this->_merge_model_attributes();
+            
+            foreach ($this->attributes() as $attr => $val) {
+                $proper = static::properAttrName($attr);
+                if (!static::table()->columnExists($proper)) {
+                    continue;
+                }
+                $cols_names[] = '`'.$attr.'`';
+                $cols_values[] = $val;
+                $init_attrs[$attr] = $val;
             }
             
-            if ($pri_key = static::table()->primaryKey()) {
-                $this->setAttribute($pri_key, $id);
+            if (!$cols_values)
+                return false;
+            
+            $binding_marks = implode(', ', array_fill(0, (count($cols_names)), '?'));
+            $cols_names = implode(', ', $cols_names);
+            
+            $sql = 'INSERT INTO `'.static::tableName().'` ('.$cols_names.') VALUES ('.$binding_marks.')';
+            
+            array_unshift($cols_values, $sql);
+            
+            static::connection()->executeSql($cols_values);
+            
+            $id = static::connection()->lastInsertId();
+            
+            $primary_key = static::table()->primaryKey();
+            
+            if ($primary_key && count($primary_key) == 1) {
+                if (!$id) {
+                    $this->errors()->addToBase('Couldn\'t retrieve new primary key.');
+                    return false;
+                }
+                
+                if ($pri_key = static::table()->primaryKey()) {
+                    $this->setAttribute($pri_key, $id);
+                }
+            } else {
+                $this->storedAttributes = $init_attrs;
             }
-        } else {
-            $this->storedAttributes = $init_attrs;
-        }
-        
-        $this->isNewRecord = false;
+            
+            $this->isNewRecord = false;
+            
+            return true;
+        });
         // $this->init();
         
-        $this->runCallbacks('after_create');
-        $this->runCallbacks('after_save');
+        // $this->runCallbacks('after_create');
+        // $this->runCallbacks('after_save');
         
-        return true;
+        // return true;
     }
     
     private function _save_do()

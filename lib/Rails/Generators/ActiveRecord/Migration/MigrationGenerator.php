@@ -16,7 +16,7 @@ class MigrationGenerator extends NamedBase
     public function createFile()
     {
         $inflector = \Rails::services()->get('inflector');
-        $this->migrationClassName = $inflector->classify($this->fileName);
+        $this->migrationClassName = $inflector->camelize($this->fileName);
         
         $this->fileName = gmdate('YmdHis') . '_' . $this->fileName;
         
