@@ -9,6 +9,9 @@ use Rails\ActiveRecord\ActiveRecord;
 
 class Schema
 {
+    /**
+     * @var \Rails\ActiveRecord\Connection
+     */
     protected $connection;
     
     protected $adapter;
@@ -32,6 +35,11 @@ class Schema
     public function adapter()
     {
         return $this->sql;
+    }
+    
+    public function connection()
+    {
+        return $this->connection;
     }
     
     public function createTable($tableName, $options = [], Closure $block = null)
@@ -95,11 +103,22 @@ class Schema
     public function getColumnDefinition($name, $type, $options)
     {
         switch ($type) {
+            case 'string':
             case 'varchar':
+                # Default options.
+                $options = array_merge([
+                    'limit' => 255
+                ], $options);
+                
                 $column = new Ddl\Column\Varchar($name, $options['limit']);
                 break;
             
             case 'char':
+                # Default options.
+                $options = array_merge([
+                    'limit' => 255
+                ], $options);
+                
                 $column = new Ddl\Column\Char($name, $options['limit']);
                 break;
             
@@ -115,11 +134,24 @@ class Schema
                 $column = new Column\Text($name);
                 break;
             
+            // case 'primary_key':
+                
+                // break;
+            
             default:
                 throw new Exception\RuntimeException(
                     sprintf("Unknown column type '%s'", $type)
                 );
         }
+        
+        # Allow/disallow null, TRUE by default.
+        $column->setNullable(!isset($options['null']) || !empty($options['null']));
+        
+        # Set default value.
+        if (isset($options['default'])) {
+            $column->setDefault($options['default']);
+        }
+        
         return $column;
     }
     

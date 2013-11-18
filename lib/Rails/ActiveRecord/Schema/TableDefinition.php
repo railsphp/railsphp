@@ -2,9 +2,8 @@
 namespace Rails\ActiveRecord\Schema;
 
 use Zend\Db\Sql\Ddl\Column as ZfColumn;
-use Zend\Db\Sql\Ddl\Constraint;
+use Zend\Db\Sql\Ddl\Constraint as ZfConstraint;
 use Rails\ActiveRecord\Exception;
-use Rails\ActiveRecord\Schema\Constraint as RailsConstraint;
 
 class TableDefinition
 {
@@ -18,7 +17,7 @@ class TableDefinition
     public function __construct(Schema $schema, \Zend\Db\Sql\Ddl\CreateTable $table)
     {
         $this->schema = $schema;
-        $this->table = $table;
+        $this->table  = $table;
     }
     
     /**
@@ -104,19 +103,28 @@ class TableDefinition
         return $this;
     }
     
-    public function primaryKey($name, $type = 'integer', array $options = [])
+    public function primaryKey($name, $type = 'primary_key', array $options = [])
     {
-        $this->column($name, $type, $options);
-        $this->table->addConstraint(
-            new Constraint\PrimaryKey($name)
-        );
+        $adapterName = strtolower($this->schema->connection()->adapterName());
+        $column = new Column\PrimaryKey($name, $adapterName);
+        
+        switch ($adapterName) {
+            case 'mysql':
+                $this->table->addConstraint(
+                    new ZfConstraint\PrimaryKey($name)
+                );
+                break;
+        }
+        
+        $this->table->addColumn($column);
+        
         return $this;
     }
     
     public function index($columnName, array $options = [])
     {
         $this->table->addConstraint(
-            new RailsConstraint\IndexKey($columnName)
+            new Constraint\IndexKey($columnName)
         );
         return $this;
     }

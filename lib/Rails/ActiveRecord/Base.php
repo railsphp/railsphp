@@ -641,7 +641,7 @@ abstract class Base
                     $params = [];
                 }
                 
-                # If blocks (Closure) must return true in order for the method to be executed.
+                # "If" blocks (Closure) must return true in order for the method to be executed.
                 if (isset($params['if'])) {
                     if (true !== $params['if']()) {
                         continue;
@@ -708,14 +708,14 @@ abstract class Base
      * Merges model's callbacks and "plugged" callbacks.
      * If under production environment, the callbacks will be cached.
      */
-    private function allCallbacks()
+    protected function allCallbacks()
     {
         if (Rails::env() == 'production') {
             return Rails::cache()->fetch('rails.models.' . get_called_class() . '.callbacks', function() {
-                return array_merge($this->callbacks(), $this->pluggedCallbacks());
+                return array_merge_recursive($this->callbacks(), $this->pluggedCallbacks());
             });
         } else {
-            return array_merge($this->callbacks(), $this->pluggedCallbacks());
+            return array_merge_recursive($this->callbacks(), $this->pluggedCallbacks());
         }
     }
     
