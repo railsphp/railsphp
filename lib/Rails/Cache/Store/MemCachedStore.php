@@ -36,14 +36,12 @@ class MemCachedStore extends AbstractStore
                 # There was some kind of error.
             }
         } else {
-            return unserialize($value);
+            return $value;
         }
     }
     
     public function write($key, $val, array $params)
     {
-        $val = serialize($val);
-        
         if (isset($params['expires_in'])) {
             if (!ctype_digit((string)$params['expires_in']))
                 $expires_in = strtotime('+' . $params['expires_in']);

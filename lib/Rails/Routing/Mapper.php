@@ -535,6 +535,19 @@ class Mapper
         }
         $params['via'] = $via;
         
+        # If inside resources, create an alias using the resources names.
+        if ($this->resources) {
+            if (!array_key_exists('as', $params)) {
+                if (preg_match('/^[\w\/]+$/', $url)) {
+                    $alias = str_replace('/', '_', $url);
+                }
+                
+                $alias .= '_' . implode($this->resources, '_');
+                
+                $params['as'] = $alias;
+            }
+        }
+        
         $this->createAndAddRoute($url, $to, $params);
     }
     

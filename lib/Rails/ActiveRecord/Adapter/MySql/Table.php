@@ -55,4 +55,11 @@ class Table/* extends AbstractTable*/
         
         return [$table_data, $table_indexes];
     }
+    
+    static public function exists(Connection $connection, $tableName)
+    {
+        $sql = sprintf("SHOW TABLES LIKE '%s'", $tableName);
+        
+        return (bool)$connection->selectValue($sql);
+    }
 }

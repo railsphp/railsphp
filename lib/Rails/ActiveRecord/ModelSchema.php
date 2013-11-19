@@ -5,6 +5,11 @@ use Rails;
 
 class ModelSchema
 {
+    /**
+     * Table name
+     *
+     * @var string
+     */
     protected $name;
     
     protected $schema;
@@ -54,6 +59,12 @@ class ModelSchema
                 sprintf("Couldn't find schema for %s", $this->name)
             );
         }
+    }
+    
+    public function tableExists()
+    {
+        $adapter = $this->adapterClass();
+        return $adapter::exists($this->connection, $this->name);
     }
     
     protected function loadCachedSchema()

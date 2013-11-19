@@ -348,11 +348,11 @@ class Base
             $files = [];
             
             $patt = $path . '/*.php';
-            $files = array_merge($files, glob($patt));
+            $files = array_merge($files, glob($patt) ?: []);
             
             foreach (Toolbox\FileTools::listDirs($path) as $dir) {
                 $patt = $dir . '/*.php';
-                $files = array_merge($files, glob($patt));
+                $files = array_merge($files, glob($patt) ?: []);
             }
             
             foreach ($files as $file) {

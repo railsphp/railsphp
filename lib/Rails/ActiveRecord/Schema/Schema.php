@@ -9,19 +9,21 @@ use Rails\ActiveRecord\ActiveRecord;
 
 class Schema
 {
+    /**
+     * @var \Rails\ActiveRecord\Connection
+     */
     protected $connection;
     
     protected $adapter;
     
     protected $sql;
     
-    public function __construct(ActiveRecord\Connection $connection = null)
+    public function __construct(\Rails\ActiveRecord\Connection $connection = null)
     {
         if (!$connection) {
             $connection = ActiveRecord::connection(Rails::env());
         }
         $this->connection = $connection;
-        
         $this->buildZfAdapter();
     }
     
@@ -33,6 +35,11 @@ class Schema
     public function adapter()
     {
         return $this->sql;
+    }
+    
+    public function connection()
+    {
+        return $this->connection;
     }
     
     public function createTable($tableName, $options = [], Closure $block = null)
@@ -65,12 +72,97 @@ class Schema
     
     public function addColumn($tableName, $name, $type, array $options = [])
     {
+        $column = $this->getColumnDefinition($name, $type, $options);
         
+        $ddl = new Ddl\AlterTable($tableName);
+        $ddl->addColumn($column);
+        
+        $this->queryAdapter($ddl);
     }
     
     public function addIndex($tableName, $columnName, array $options = [])
     {
+        if (!isset($options['name'])) {
+            $options['name'] = '';
+        }
         
+        if (!empty($options['unique'])) {
+            $index = new Ddl\Constraint\UniqueKey($columnName, $options['name']);
+        } elseif (!empty($options['primary_key'])) {
+            $index = new Constraint\PrimaryKey($columnName);
+        } else {
+            $index = new Constraint\IndexKey($columnName);
+        }
+        
+        $ddl = new Ddl\AlterTable($tableName);
+        $ddl->addConstraint($index);
+        
+        $this->queryAdapter($ddl);
+    }
+    
+    public function getColumnDefinition($name, $type, $options)
+    {
+        switch ($type) {
+            case 'string':
+            case 'varchar':
+                # Default options.
+                $options = array_merge([
+                    'limit' => 255
+                ], $options);
+                
+                $column = new Ddl\Column\Varchar($name, $options['limit']);
+                break;
+            
+            case 'char':
+                # Default options.
+                $options = array_merge([
+                    'limit' => 255
+                ], $options);
+                
+                $column = new Ddl\Column\Char($name, $options['limit']);
+                break;
+            
+            case 'integer':
+                $column = new Ddl\Column\Integer($name);
+                break;
+            
+            case 'datetime':
+                $column = new Column\DateTime($name);
+                break;
+            
+            case 'text':
+                $column = new Column\Text($name);
+                break;
+            
+            // case 'primary_key':
+                
+                // break;
+            
+            default:
+                throw new Exception\RuntimeException(
+                    sprintf("Unknown column type '%s'", $type)
+                );
+        }
+        
+        # Allow/disallow null, TRUE by default.
+        $column->setNullable(!isset($options['null']) || !empty($options['null']));
+        
+        # Set default value.
+        if (isset($options['default'])) {
+            $column->setDefault($options['default']);
+        }
+        
+        return $column;
+    }
+    
+    public function tableExists($tableName)
+    {
+        return $this->connection->tableExists($tableName);
+    }
+    
+    public function execute()
+    {
+        return call_user_func_array([$this->connection, 'executeSql'], func_get_args());
     }
     
     protected function buildZfAdapter()
@@ -84,11 +176,6 @@ class Schema
         $this->sql = new Db\Sql\Sql(
             $this->adapter
         );
-        
-        // $select = $this->zfSql->select('posts')->where(['id' => 1]);
-        // $stmt = $this->zfSql->prepareStatementForSqlObject($select);
-        
-        // vp($stmt->execute()->getResource()->fetchAll());
     }
     
     protected function queryAdapter($ddl)
