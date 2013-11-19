@@ -61,7 +61,7 @@ class Migrator
         unset($classes);
         
         $migrator = new $className();
-        $migrator->change();
+        $migrator->up();
         
         STable::create([
             'version' => $version

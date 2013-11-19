@@ -1,7 +1,7 @@
 <?= $this->phpOpenTag() ?>
 class <?= $this->migrationClassName ?> extends Rails\ActiveRecord\Migration\Base
 {
-    public function change()
+    public function up()
     {
         
     }
