@@ -47,7 +47,7 @@ class UrlHelpers
             }
         }
         // $msg = "No route found with alias '%s'";
-        if ($params) {
+        if ($params && (!isset($params[0]) || !is_object($params[0]))) {
             $inlineParams = '( ';
             foreach ($params as $k => $v) {
                 $inlineParams .= $k . '=>' . $v;

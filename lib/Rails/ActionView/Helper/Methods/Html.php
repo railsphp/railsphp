@@ -9,7 +9,13 @@ trait Html
     
     public function linkTo($link, $url_params, array $attrs = array())
     {
+        if ($url_params instanceof Rails\ActiveRecord\Base) {
+            $controller = Rails::services()->get('inflector')->underscore(get_class($url_params));
+            $url_params = [$controller . '#show', 'id' => $url_params->id];
+        }
+        
         $url_to = $this->parseUrlParams($url_params);
+        
         $onclick = '';
         
         if (isset($attrs['method'])) {

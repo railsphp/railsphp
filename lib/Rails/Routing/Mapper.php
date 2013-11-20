@@ -27,6 +27,8 @@ class Mapper
     
     private $createAsMember = false;
     
+    private $createAsCollection = false;
+    
     private $resources = [];
     
     private $resource = [];
@@ -166,9 +168,11 @@ class Mapper
     
     public function collection(Closure $block)
     {
+        $this->createAsCollection = true;
         $this->scopeParams[] = ['on' => 'collection'];
         $block();
         array_pop($this->scopeParams);
+        $this->createAsCollection = false;
     }
     
     private function createRoutesWithResource($multiple, $params, Closure $block = null)
@@ -536,14 +540,15 @@ class Mapper
         $params['via'] = $via;
         
         # If inside resources, create an alias using the resources names.
-        if ($this->resources && (empty($params['on']) || $params['on'] != 'collection')) {
+        if ($this->resources) {
             if (!array_key_exists('as', $params)) {
                 if (preg_match('/^[\w\/]+$/', $url)) {
                     $alias = str_replace('/', '_', $url);
                 }
-                
                 $alias .= '_' . implode($this->resources, '_');
-                
+                if (!$this->createAsCollection) {
+                    $alias = Rails::services()->get('inflector')->singularize($alias);
+                }
                 $params['as'] = $alias;
             }
         }
