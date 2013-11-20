@@ -478,7 +478,9 @@ abstract class Base
     # Deletes current model from database but keeps model's properties.
     public function destroy()
     {
-        return $this->_delete_from_db('destroy');
+        return $this->runCallbacks('destroy', function() {
+            return $this->_delete_from_db('destroy');
+        });
     }
     
     public function errors()
@@ -984,9 +986,9 @@ abstract class Base
     
     private function _delete_from_db($type)
     {
-        if (!$this->runCallbacks('before_'.$type)) {
-            return false;
-        }
+        // if (!$this->runCallbacks('before_'.$type)) {
+            // return false;
+        // }
         
         $w = $wd = [];
         
@@ -1013,7 +1015,7 @@ abstract class Base
         
         static::connection()->executeSql($wd);
         
-        $this->runCallbacks('after_'.$type);
+        // $this->runCallbacks('after_'.$type);
         
         return true;
     }
