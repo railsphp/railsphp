@@ -23,4 +23,28 @@ trait CounterMethods
         $sql = "UPDATE `".self::tableName()."` SET ".implode(', ', $values)." WHERE id IN (?)";
         return self::connection()->executeSql($sql, $ids);
     }
+    
+    public function incrementAttr($attribute, $by = 1)
+    {
+        $this->$attribute || $this->$attribute = 0;
+        $this->$attribute += $by;
+        return $this;
+    }
+    
+    public function increment($attribute, $by = 1)
+    {
+        return $this->incrementAttr($attribute, $by)->updateAttribute($attribute, $this->$attribute);
+    }
+    
+    public function decrementAttr($attribute, $by = 1)
+    {
+        $this->$attribute || $this->$attribute = 0;
+        $this->$attribute -= $by;
+        return $this;
+    }
+    
+    public function decrement($attribute, $by = 1)
+    {
+        return $this->decrementAttr($attribute, $by)->updateAttribute($attribute, $this->$attribute);
+    }
 }
