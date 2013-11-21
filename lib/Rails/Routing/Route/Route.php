@@ -50,10 +50,10 @@ class Route
     # variables in the order they're defined in the route.
     private $_vars_names = array();
     
-    /**
-     * Variable values taken from the request url.
-     */
-    private $_vars_values = array();
+    // /**
+     // * Variable values taken from the request url.
+     // */
+    // private $_vars_values = array();
     
     /**
      * $var_name => $regexp
@@ -62,7 +62,7 @@ class Route
     
     private $_as;
     
-    private $_subdomain;
+    // private $_subdomain;
     
     private $_paths = [];
     
@@ -72,10 +72,10 @@ class Route
     
     private $_action = '';
     
-    /**
-     * Following props serve for Build
-     */
-    private $_optional_parts = array();
+    // /**
+     // * Following props serve for Build
+     // */
+    // private $_optional_parts = array();
     
     /**
      * Needed to do a diff after building a route,
@@ -99,9 +99,20 @@ class Route
     static public function __set_state(array $params)
     {
         $route = new self(null, null);
-        foreach ($params as $prop => $val) {
-            $route->$prop = $val;
-        }
+        $route->_url = $params['_url'];
+        $route->_escaped_url = $params['_escaped_url'];
+        $route->_to = $params['_to'];
+        $route->_via = $params['_via'];
+        $route->_format = $params['_format'];
+        $route->_defaults = $params['_defaults'];
+        $route->_vars = $params['_vars'];
+        $route->_optional_groups = $params['_optional_groups'];
+        $route->_vars_names = $params['_vars_names'];
+        $route->_constraints = $params['_constraints'];
+        $route->_as = $params['_as'];
+        $route->_modules = $params['_modules'];
+        $route->_rails_panel = $params['_rails_panel'];
+        $route->_assets_route = $params['_assets_route'];
         return $route;
     }
     

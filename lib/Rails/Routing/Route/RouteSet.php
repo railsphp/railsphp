@@ -79,24 +79,28 @@ class RouteSet implements IteratorAggregate
     
     private function exportRoute($route)
     {
-        $str = var_export($route, true);
+        $str   = var_export($route, true);
         $start = strlen(get_class($route)) + 14;
-        $arr = eval('return ' . substr($str, $start, -1) . ';');
-        return $arr;
+        return eval('return ' . substr($str, $start, -1) . ';');
     }
     
     # Used by Rails
-    public function drawCached($cachedRoutes)
+    public function drawCached(array $cachedRoutes)
     {
         if (!$this->routes_drawn) {
             Route::willCreateCached();
             
-            $root = Route::__set_state($cachedRoutes['root']);
-            $this->set_root_route($root);
+            $r = Route::__set_state($cachedRoutes['root']);
+            $this->set_root_route($r);
             
             foreach ($cachedRoutes['app'] as $params) {
-                $route = Route::__set_state($params);
-                $this->add($route);
+                $r = Route::__set_state($params);
+                $this->add($r);
+            }
+            
+            if (isset($cachedRoutes['assets'])) {
+                $r = Route::__set_state($cachedRoutes['assets']);
+                $this->set_assets_route($r);
             }
             $this->routes_drawn = true;
         }

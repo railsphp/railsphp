@@ -33,18 +33,6 @@ class Router
      */
     private $_request_path;
     
-    
-    // private
-        /**
-         * Rails_Router_Route instance that holds the root route.
-         */
-        // $_root,
-        /**
-         * Rails_Router_Route instance that holds the panel route.
-         */
-        // $_admin,
-        // $_assets;
-    
     /**
      * Rails_Router_Route instance that matched the request.
      */
@@ -127,18 +115,17 @@ class Router
         
         $this->_imported_routes = true;
         
+        $useCache = Rails::env() == 'production';
         $this->_routes = new Route\RouteSet();
         
-        # Cache routes stuff
-        $key = 'Rails.routing.routes';
+        if ($useCache) {
+            $key = 'Rails.routing.routes';
+            $cachedRoutes = Rails::cache()->read($key);
+        } else {
+            $cachedRoutes = false;
+        }
         
-        // Rails::cache()->delete($key);
-        
-        $cachedRoutes = Rails::cache()->read($key);
-        
-        if ($cachedRoutes) {
-        // if (false) {
-        // vpe($cachedRoutes);
+        if ($useCache && $cachedRoutes) {
             $this->_routes->drawCached($cachedRoutes);
         } else {
             $importRoutes = function() {
@@ -147,8 +134,7 @@ class Router
                 require $routes_file;
             };
             
-            if (Rails::env() == 'production') {
-            // if (true) {
+            if ($useCache) {
                 $this->_routes->setCacheRoutes(true);
                 $importRoutes();
                 
