@@ -54,7 +54,12 @@ class Entry
     
     public function write($val)
     {
-        $this->_value = serialize($val);
+        if (is_string($val)) {
+            $this->params['type'] = 'string';
+            $this->_value = $val;
+        } else {
+            $this->_value = serialize($val);
+        }
         
         if (isset($this->params['expires_in'])) {
             if (!ctype_digit((string)$this->params['expires_in']))
@@ -64,7 +69,6 @@ class Entry
             $this->_dir = $this->params['path'];
             unset($this->params['path']);
         }
-        $this->params = $this->params;
         
         $header = [];
         foreach ($this->params as $k => $v)
@@ -116,6 +120,7 @@ class Entry
     {
         $regex = '/^(\V+)/';
         preg_match($regex, $this->_file_contents, $m);
+        
         if (!empty($m[1])) {
             foreach(explode(self::DATA_SEPARATOR, $m[1]) as $data) {
                 list($key, $val) = explode(self::KEY_VALUE_SEPARATOR, $data);
@@ -127,7 +132,12 @@ class Entry
         # For some reason, try/catch Exception didn't work.
         $err_handler = set_error_handler([$this, "unserialize_e_handler"]);
         
-        $this->_value = unserialize(str_replace($m[1] . "\n", '', $this->_file_contents));
+        if (isset($this->params['type']) && $this->params['type'] == 'string') {
+            $this->_value = str_replace($m[1] . "\n", '', $this->_file_contents);
+        } else {
+            $this->_value = unserialize(str_replace($m[1] . "\n", '', $this->_file_contents));
+        }
+        
         $this->_file_contents = null;
         
         set_error_handler($err_handler);
