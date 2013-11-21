@@ -108,8 +108,6 @@ class Router
     
     public function rootPath()
     {
-        ############ WARNING
-        ############ MUST UPDATE ALL SYSTEMS TO THIS CHANGE (added trailing slash when returning basePath)
         if ($base_path = $this->basePath())
             return $base_path . '/';
         return '/';
@@ -123,16 +121,44 @@ class Router
     
     private function importRoutes()
     {
-        if ($this->_imported_routes)
+        if ($this->_imported_routes) {
             return;
+        }
         
         $this->_imported_routes = true;
+        
         $this->_routes = new Route\RouteSet();
         
-        $config = Rails::config();
-        $routes_file = $config->paths->config->concat('routes.php');
+        # Cache routes stuff
+        $key = 'Rails.routing.routes';
         
-        require $routes_file;
+        // Rails::cache()->delete($key);
+        
+        $cachedRoutes = Rails::cache()->read($key);
+        
+        if ($cachedRoutes) {
+        // if (false) {
+        // vpe($cachedRoutes);
+            $this->_routes->drawCached($cachedRoutes);
+        } else {
+            $importRoutes = function() {
+                $config      = Rails::config();
+                $routes_file = $config->paths->config->concat('routes.php');
+                require $routes_file;
+            };
+            
+            if (Rails::env() == 'production') {
+            // if (true) {
+                $this->_routes->setCacheRoutes(true);
+                $importRoutes();
+                
+                $cachedRoutes = $this->_routes->getCachedRoutes();
+                
+                Rails::cache()->write($key, $cachedRoutes);
+            } else {
+                $importRoutes();
+            }
+        }
     }
     
     private function matchRoutes()

@@ -23,6 +23,10 @@ class RouteSet implements IteratorAggregate
     
     private $routes_drawn = false;
     
+    private $cacheRoutes = false;
+    
+    private $cachedRoutes = [];
+    
     static public function validate_route_alias($alias)
     {
         return !in_array($alias, self::$_routes_aliases);
@@ -43,11 +47,57 @@ class RouteSet implements IteratorAggregate
         return $this->routes;
     }
     
+    public function setCacheRoutes($value)
+    {
+        $this->cacheRoutes = (bool)$value;
+    }
+    
+    public function getCachedRoutes()
+    {
+        return $this->cachedRoutes;
+    }
+    
     public function draw(\Closure $block)
     {
         if (!$this->routes_drawn) {
             $mapper = new Mapper($this);
+            
             $mapper->drawRoutes($block);
+            $this->routes_drawn = true;
+            
+            if ($this->cacheRoutes) {
+                foreach ($this->routes as $route) {
+                    $this->cachedRoutes['app'][] = $this->exportRoute($route);
+                }
+                
+                $this->cachedRoutes['root'] = $this->exportRoute($this->rootRoute);
+                if ($this->assets_route)
+                    $this->cachedRoutes['assets'] = $this->exportRoute($this->assets_route);
+            }
+        }
+    }
+    
+    private function exportRoute($route)
+    {
+        $str = var_export($route, true);
+        $start = strlen(get_class($route)) + 14;
+        $arr = eval('return ' . substr($str, $start, -1) . ';');
+        return $arr;
+    }
+    
+    # Used by Rails
+    public function drawCached($cachedRoutes)
+    {
+        if (!$this->routes_drawn) {
+            Route::willCreateCached();
+            
+            $root = Route::__set_state($cachedRoutes['root']);
+            $this->set_root_route($root);
+            
+            foreach ($cachedRoutes['app'] as $params) {
+                $route = Route::__set_state($params);
+                $this->add($route);
+            }
             $this->routes_drawn = true;
         }
     }

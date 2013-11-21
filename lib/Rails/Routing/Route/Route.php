@@ -14,6 +14,8 @@ class Route
     
     const GLOBBING_REGEXP    = '(.*?)';
     
+    static private $creatingCached = false;
+    
     /**
      * URL with variables.
      */
@@ -64,8 +66,6 @@ class Route
     
     private $_paths = [];
     
-    // private $_namespaces = [];
-    
     private $_modules = [];
     
     private $_controller = '';
@@ -91,8 +91,26 @@ class Route
         $_rails_panel = false,
         $_assets_route = false;
     
+    static public function willCreateCached()
+    {
+        self::$creatingCached = true;
+    }
+    
+    static public function __set_state(array $params)
+    {
+        $route = new self(null, null);
+        foreach ($params as $prop => $val) {
+            $route->$prop = $val;
+        }
+        return $route;
+    }
+    
     public function __construct($url, $to, array $params = array())
     {
+        if (self::$creatingCached) {
+            return;
+        }
+        
         foreach ($params as $name => $val) {
             $prop = '_' . $name;
             if (!property_exists($this, $prop))
@@ -157,6 +175,10 @@ class Route
             $this->_escape_url();
             $this->_set_default_vars_values();
             $this->_set_alias();
+            // $a = var_export($this, true);
+            // $a = substr($a, 39, -1) . ';';
+            // vpe(eval('return ' . $a));
+            // exit;
         }
     }
     

@@ -37,9 +37,25 @@ class Mapper
     
     private $routeSet;
     
+    # Cache stuff
+    private $cacheRoutes = false;
+    
+    private $cachedRoutes = [];
+    
     public function __construct(Route\RouteSet $routeSet)
     {
         $this->routeSet = $routeSet;
+    }
+    
+    # Used by Rails
+    public function setCacheRoutes($value)
+    {
+        $this->cacheRoutes = (bool)$value;
+    }
+    
+    public function getCachedRoutes()
+    {
+        return $this->cachedRoutes;
     }
     
     /**
@@ -484,6 +500,23 @@ class Mapper
             $route = $this->createResourceNestedRoute($url, $params, $current == 'resources', $to);
         } else {
             unset($params['on']);
+            
+            if ($this->cacheRoutes) {
+                if (!$this->cachedRoutes) {
+                    $this->cachedRoutes = [
+                        'app' => []
+                    ];
+                }
+                
+                if ($url == self::ROOT_URL) {
+                    $this->cachedRoutes['root']   = [$url, $to, $params];
+                } elseif (!empty($params['assets_route'])) {
+                    $this->cachedRoutes['assets'] = [$url, $to, $params];
+                } else {
+                    $this->cachedRoutes['app'][]  = [$url, $to, $params];
+                }
+            }
+            
             $route = new Route\Route($url, $to, $params);
         }
         return $route;
