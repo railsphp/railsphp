@@ -412,51 +412,16 @@ abstract class Base
      */
     public function save(array $opts = array())
     {
-        // if (empty($opts['skip_validation'])) {
-            // if (!$this->_validate_data(!empty($opts['action']) ? $opts['action'] : 'save'))
-                // return false;
-        // }
-        
-        if (empty($opts['skip_callbacks'])) {
-            return $this->runCallbacks('save', function() use ($opts) {
-                if ($this->isNewRecord()) {
-                    if (!$this->_create_do($opts))
-                        return false;
-                } else {
-                    if (!$this->_validate_data('save', $opts))
-                        return false;
-                    
-                    // return $this->runCallbacks('save', function() {
-                    if (!$this->_save_do($opts))
-                        return false;
-                    // });
-                    // } else {
-                    // }
-                    // if (empty($opts['skip_callbacks'])) {
-                        // if (!$this->runCallbacks('before_save'))
-                            // return false;
-                    // }
-                    // if (!$this->_save_do($opts))
-                        // return false;
-                    // if (empty($opts['skip_callbacks'])) {
-                        // $this->runCallbacks('after_save');
-                    // }
-                }
-                return true;
-            });
+        if ($this->isNewRecord()) {
+            if (!$this->_create_do($opts))
+                return false;
         } else {
-            if ($this->isNewRecord()) {
-                if (!$this->_create_do($opts))
-                    return false;
-            } else {
-                if (!$this->_validate_data('save'))
-                    return false;
-                
-                if (!$this->_save_do($opts))
-                    return false;
-            }
+            if (!$this->_validate_data('save', $opts))
+                return false;
             
-            return true;
+            return $this->runCallbacks('save', function() {
+                return $this->_save_do();
+            });
         }
     }
     
@@ -825,82 +790,63 @@ abstract class Base
     
     private function _create_do()
     {
-        // if (!$this->runCallbacks('before_validation_on_create')) {
-            // return false;
-        // } elseif (!$this->_validate_data('create')) {
-            // return false;
-        // }
+        if (!$this->_validate_data('create')) {
+            return false;
+        }
         
-        // $this->runCallbacks('after_validation_on_create');
-        
-        // if (!$this->runCallbacks('before_save'))
-            // return false;
-        
-        // if (!$this->runCallbacks('before_create'))
-            // return false;
-        
-        return $this->runCallbacks('create', function() {
-            if (!$this->_validate_data('create'))
-                return false;
-            
-            $this->_check_time_column('created_at');
-            $this->_check_time_column('updated_at');
-            $this->_check_time_column('created_on');
-            $this->_check_time_column('updated_on');
-            
-            $cols_values = $cols_names = array();
-            
-            // $this->_merge_model_attributes();
-            
-            foreach ($this->attributes() as $attr => $val) {
-                $proper = static::properAttrName($attr);
-                if (!static::table()->columnExists($proper)) {
-                    continue;
-                }
-                $cols_names[] = '`'.$attr.'`';
-                $cols_values[] = $val;
-                $init_attrs[$attr] = $val;
-            }
-            
-            if (!$cols_values)
-                return false;
-            
-            $binding_marks = implode(', ', array_fill(0, (count($cols_names)), '?'));
-            $cols_names = implode(', ', $cols_names);
-            
-            $sql = 'INSERT INTO `'.static::tableName().'` ('.$cols_names.') VALUES ('.$binding_marks.')';
-            
-            array_unshift($cols_values, $sql);
-            
-            static::connection()->executeSql($cols_values);
-            
-            $id = static::connection()->lastInsertId();
-            
-            $primary_key = static::table()->primaryKey();
-            
-            if ($primary_key && count($primary_key) == 1) {
-                if (!$id) {
-                    $this->errors()->addToBase('Couldn\'t retrieve new primary key.');
-                    return false;
+        return $this->runCallbacks('save', function() {
+            return $this->runCallbacks('create', function() {
+                $this->_check_time_column('created_at');
+                $this->_check_time_column('updated_at');
+                $this->_check_time_column('created_on');
+                $this->_check_time_column('updated_on');
+                
+                $cols_values = $cols_names = array();
+                
+                foreach ($this->attributes() as $attr => $val) {
+                    $proper = static::properAttrName($attr);
+                    if (!static::table()->columnExists($proper)) {
+                        continue;
+                    }
+                    $cols_names[] = '`'.$attr.'`';
+                    $cols_values[] = $val;
+                    $init_attrs[$attr] = $val;
                 }
                 
-                if ($pri_key = static::table()->primaryKey()) {
-                    $this->setAttribute($pri_key, $id);
+                if (!$cols_values)
+                    return false;
+                
+                $binding_marks = implode(', ', array_fill(0, (count($cols_names)), '?'));
+                $cols_names = implode(', ', $cols_names);
+                
+                $sql = 'INSERT INTO `'.static::tableName().'` ('.$cols_names.') VALUES ('.$binding_marks.')';
+                
+                array_unshift($cols_values, $sql);
+                
+                static::connection()->executeSql($cols_values);
+                
+                $id = static::connection()->lastInsertId();
+                
+                $primary_key = static::table()->primaryKey();
+                
+                if ($primary_key && count($primary_key) == 1) {
+                    if (!$id) {
+                        $this->errors()->addToBase('Couldn\'t retrieve new primary key.');
+                        return false;
+                    }
+                    
+                    if ($pri_key = static::table()->primaryKey()) {
+                        $this->setAttribute($pri_key, $id);
+                    }
+                } else {
+                    $this->storedAttributes = $init_attrs;
                 }
-            } else {
-                $this->storedAttributes = $init_attrs;
-            }
-            
-            $this->isNewRecord = false;
-            
-            return true;
+                
+                $this->isNewRecord = false;
+                
+                return true;
+            });
         });
-        // $this->init();
-        
-        // $this->runCallbacks('after_create');
-        // $this->runCallbacks('after_save');
-        
-        // return true;
     }
     
     private function _save_do()
