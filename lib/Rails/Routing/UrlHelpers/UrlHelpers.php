@@ -125,26 +125,32 @@ class UrlHelpers
         
         if ($this->useCache()) {
             $key  = 'Rails.routes.tokens.' . $token;
-            $data = Rails::cache()->fetch($key, function() use ($model, $token, $params, $key) {
-                foreach ($this->router()->routes() as $route) {
+            $index = Rails::cache()->fetch($key, function() use ($model, $token, $params) {
+                foreach ($this->router()->routes() as $k => $route) {
                     if ($model) {
                         $params = $this->extract_route_vars_from_model($route, $model);
                     }
-                    $url = $route->match_with_token($token, $params);
+                    // $url = $route->match_with_token($token, $params);
                     
-                    if ($url) {
-                        if ($base_path = $this->router()->basePath()) {
-                            $url = $base_path . $url;
-                        }
-                        Rails::cache()->write($key, $data);
-                        return [$route, $url];
+                    if ($route->match_with_token($token, $params)) {
+                        return $k;
+                        // if ($base_path = $this->router()->basePath()) {
+                            // $url = $base_path . $url;
+                        // }
+                        // Rails::cache()->write($key, $data);
+                        // return [$route, $url];
                     }
                 }
                 return false;
             });
             
-            if ($data) {
-                return $data;
+            if ($index) {
+                $route = $this->router()->routes()->routes()->offsetGet($index);
+                $url   = $route->match_with_token($token, $params);
+                if ($base_path = $this->router()->basePath()) {
+                    $url = $base_path . $url;
+                }
+                return [$route, $url];
             }
         } else {
             foreach ($this->router()->routes() as $route) {
