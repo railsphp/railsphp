@@ -125,7 +125,7 @@ class UrlHelpers
         
         if ($this->useCache()) {
             $key  = 'Rails.routes.tokens.' . $token;
-            $data = Rails::cache()->fetch($key, function() use ($model, $token, $params) {
+            $data = Rails::cache()->fetch($key, function() use ($model, $token, $params, $key) {
                 foreach ($this->router()->routes() as $route) {
                     if ($model) {
                         $params = $this->extract_route_vars_from_model($route, $model);
