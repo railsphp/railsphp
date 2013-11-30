@@ -1,6 +1,7 @@
 <?php
 namespace Rails\Routing\UrlHelpers;
 
+use Rails;
 use Rails\Routing\Traits\NamedPathAwareTrait;
 use Rails\Routing\Exception;
 
@@ -29,36 +30,86 @@ class UrlHelpers
             return \Rails::assets()->prefix() . '/';
         }
         
-        foreach ($this->router()->routes() as $route) {
+        if ($this->useCache()) {
+            $key   = 'Rails.routes.aliases.' . $alias;
+            $index = Rails::cache()->read($key);
+            
+            if (null === $index) {
+                $index = $this->findAliasedRoute($alias, $params);
+                Rails::cache()->write($key, $index);
+            }
+            
+            if ($index) {
+                $route = $this->router()->routes()->routes()->offsetGet($index);
+                
+                if ($url = $this->buildUrl($route, $params)) {
+                    return $url;
+                }
+            }
+        } else {
+            if ($index = $this->findAliasedRoute($alias, $params)) {
+                if ($url = $this->buildUrl($route, $params)) {
+                    return $url;
+                }
+            }
+        }
+        
+        # Build exception
+        if ($params) {
+            if (is_object($params[0])) {
+                $inlineParams = '(object of class ' . get_class($params[0]) . ')';
+            } else {
+                $inlineParams = '( ';
+                foreach ($params as $k => $v) {
+                    $inlineParams .= $k . '=>' . $v;
+                }
+                $inlineParams .= ' )';
+            }
+        } else {
+            $inlineParams = "(no parameters)";
+        }
+        
+        throw new Exception\RuntimeException(
+            sprintf("No route found with alias '%s' %s", $alias, $inlineParams)
+        );
+    }
+    
+    protected function findAliasedRoute($alias, array $params = [])
+    {
+        foreach ($this->router()->routes() as $k => $route) {
             if ($route->alias() == $alias) {
                 if (isset($params[0]) && $params[0] instanceof \Rails\ActiveRecord\Base) {
                     $params = $this->extract_route_vars_from_model($route, $params[0]);
                 } else {
                     $params = $this->assocWithRouteParams($route, $params);
                 }
-                $url = $route->build_url_path($params);
                 
-                if ($url) {
-                    if ($base_path = $this->router()->basePath())
-                        $url = $base_path . $url;
-                    
-                    return $url;
+                if ($route->build_url_path($params)) {
+                    return $k;
                 }
             }
         }
-        // $msg = "No route found with alias '%s'";
-        if ($params && (!isset($params[0]) || !is_object($params[0]))) {
-            $inlineParams = '( ';
-            foreach ($params as $k => $v) {
-                $inlineParams .= $k . '=>' . $v;
-            }
-            $inlineParams .= ' )';
+        return false;
+    }
+    
+    private function buildUrl($route, $params)
+    {
+        if (isset($params[0]) && $params[0] instanceof \Rails\ActiveRecord\Base) {
+            $params = $this->extract_route_vars_from_model($route, $params[0]);
         } else {
-            $inlineParams = "(no parameters)";
+            $params = $this->assocWithRouteParams($route, $params);
         }
-        throw new Exception\RuntimeException(
-            sprintf("No route found with alias '%s' %s", $alias, $inlineParams)
-        );
+        
+        $url = $route->build_url_path($params);
+        
+        if ($url) {
+            if ($base_path = $this->router()->basePath()) {
+                $url = $base_path . $url;
+            }
+            return $url;
+        }
+        
+        return false;
     }
     
     /**
@@ -66,23 +117,51 @@ class UrlHelpers
      */
     public function find_route_for_token($token, $params = [])
     {
-        if ($params instanceof \Rails\ActiveRecord\Base)
+        if ($params instanceof \Rails\ActiveRecord\Base) {
             $model = $params;
-        else
+        } else {
             $model = false;
+        }
         
-        foreach ($this->router()->routes() as $route) {
-            if ($model) {
-                $params = $this->extract_route_vars_from_model($route, $model);
-            }
-            $url = $route->match_with_token($token, $params);
+        if ($this->useCache()) {
+            $data = Rails::cache()->fetch('Rails.routes.tokens.' . $token, function() use ($model, $token, $params) {
+                foreach ($this->router()->routes() as $route) {
+                    if ($model) {
+                        $params = $this->extract_route_vars_from_model($route, $model);
+                    }
+                    $url = $route->match_with_token($token, $params);
+                    
+                    if ($url) {
+                        if ($base_path = $this->router()->basePath()) {
+                            $url = $base_path . $url;
+                        }
+                        $data = [$route, $url];
+                        Rails::write($key, $data);
+                        break;
+                    }
+                }
+                return false;
+            });
             
-            if ($url) {
-                if ($base_path = $this->router()->basePath())
-                    $url = $base_path . $url;
-                return [$route, $url];
+            if ($data) {
+                return $data;
+            }
+        } else {
+            foreach ($this->router()->routes() as $route) {
+                if ($model) {
+                    $params = $this->extract_route_vars_from_model($route, $model);
+                }
+                $url = $route->match_with_token($token, $params);
+                
+                if ($url) {
+                    if ($base_path = $this->router()->basePath())
+                        $url = $base_path . $url;
+                    return [$route, $url];
+                }
             }
         }
+        
+        return false;
     }
     
     public function router()
@@ -95,14 +174,9 @@ class UrlHelpers
         $vars = [];
         $modelClassName = get_class($model);
         foreach (array_keys($route->vars()) as $name) {
-            // if (\Rails::config()->ar2) {
             if ($modelClassName::isAttribute($name)) {
                 $vars[$name] = $model->$name;
             }
-            // } else {
-                
-                // $vars[$name] = isset($model->$name) ? $model->$name : null;
-            // }
         }
         return $vars;
     }
@@ -121,5 +195,10 @@ class UrlHelpers
             }
         }
         return $vars;
+    }
+    
+    private function useCache()
+    {
+        return \Rails::env() == 'production';
     }
 }
