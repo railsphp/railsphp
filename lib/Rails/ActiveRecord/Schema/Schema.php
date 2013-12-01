@@ -70,12 +70,22 @@ class Schema
         $this->queryAdapter($createDdl);
     }
     
-    public function addColumn($tableName, $name, $type, array $options = [])
+    public function addColumn($tableName, $columnName, $type, array $options = [])
     {
-        $column = $this->getColumnDefinition($name, $type, $options);
+        $column = $this->getColumnDefinition($columnName, $type, $options);
         
         $ddl = new Ddl\AlterTable($tableName);
         $ddl->addColumn($column);
+        
+        $this->queryAdapter($ddl);
+    }
+    
+    public function changeColumn($tableName, $columnName, $type, array $options = [])
+    {
+        $column = $this->getColumnDefinition($columnName, $type, $options);
+        
+        $ddl = new Ddl\AlterTable($tableName);
+        $ddl->changeColumn($columnName, $column);
         
         $this->queryAdapter($ddl);
     }
