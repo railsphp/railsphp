@@ -48,6 +48,7 @@ class UrlHelpers
             }
         } else {
             if ($index = $this->findAliasedRoute($alias, $params)) {
+                $route = $this->router()->routes()->routes()->offsetGet($index);
                 if ($url = $this->buildUrl($route, $params)) {
                     return $url;
                 }
@@ -130,15 +131,9 @@ class UrlHelpers
                     if ($model) {
                         $params = $this->extract_route_vars_from_model($route, $model);
                     }
-                    // $url = $route->match_with_token($token, $params);
                     
                     if ($route->match_with_token($token, $params)) {
                         return $k;
-                        // if ($base_path = $this->router()->basePath()) {
-                            // $url = $base_path . $url;
-                        // }
-                        // Rails::cache()->write($key, $data);
-                        // return [$route, $url];
                     }
                 }
                 return false;
