@@ -10,11 +10,11 @@ trait Html
     public function linkTo($link, $url_params, array $attrs = array())
     {
         if ($url_params instanceof Rails\ActiveRecord\Base) {
-            $controller = Rails::services()->get('inflector')->underscore(get_class($url_params));
-            $url_params = [$controller . '#show', 'id' => $url_params->id];
+            $path = lcfirst(get_class($url_params)) . 'Path';
+            $url_to = $this->getNamedPath($path, [$url_params]);
+        } else {
+            $url_to = $this->parseUrlParams($url_params);
         }
-        
-        $url_to = $this->parseUrlParams($url_params);
         
         $onclick = '';
         
