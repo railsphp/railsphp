@@ -55,6 +55,12 @@ abstract class ActionMailer
     {
         $config = Rails::application()->config()->action_mailer;
         
+        if (!$config['delivery_method']) {
+            throw new Exception\RuntimeException(
+                "Delivery method for ActionMailer not set"
+            );
+        }
+        
         switch ($config['delivery_method']) {
             /**
              * Rails to Zend options:
@@ -110,7 +116,7 @@ abstract class ActionMailer
              * location       => path
              * name_generator => callback
              */
-            case  'file':
+            case 'file':
                 $customOpts = $config['file_settings'];
                 $options = [];
                 
@@ -132,13 +138,22 @@ abstract class ActionMailer
                 $fileOptions = new Mail\Transport\FileOptions($options);
                 
                 $transport = new Mail\Transport\File();
-                
                 $transport->setOptions($fileOptions);
                 
                 break;
             
+            case 'sendmail':
+                $transport = new Mail\Transport\Sendmail();
+                break;
+            
             case ($config['delivery_method'] instanceof Closure):
                 $transport = $config['delivery_method']();
+                break;
+            
+            default:
+                throw new Exception\RuntimeException(
+                    sprintf("Unknown deilvery method %s", $config['delivery_method'])
+                );
                 break;
         }
         
