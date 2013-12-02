@@ -20,19 +20,6 @@ class ApplicationConsole extends Console
         $this->argv = !empty($_SERVER['argv']) ? $_SERVER['argv'] : [];
         array_shift($this->argv);
         $this->mainArgv = array_shift($this->argv);
-        
-        ## Test
-        // $r = new Zend\Console\Request();
-        
-        
-        // $rule = 'show [all|deleted|locked|admin] users';
-        // $c    = new Zend\Mvc\Router\Console\Simple($rule);
-        
-        // $m    = $c->match($r);
-        
-        // vd($m);
-        
-        // exit;
     }
     
     public function params()
