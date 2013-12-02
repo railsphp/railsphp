@@ -715,19 +715,24 @@ abstract class Base extends ActionController
     
     private function _set_redirection()
     {
-        $redirect_params = $this->redirect_params;
-        
-        if (!is_array($redirect_params))
-            $redirect_params = [$redirect_params];
-        
+        if ($this->redirect_params instanceof Rails\ActiveRecord\Base) {
+            $path = lcfirst(get_class($this->redirect_params)) . 'Path';
+            $url  = $this->getNamedPath($path, [$this->redirect_params]);
+        } else {
+            $redirect_params = $this->redirect_params;
+            
+            if (!is_array($redirect_params))
+                $redirect_params = [$redirect_params];
+            
+            $url = Rails::application()->router()->urlFor($redirect_params);
+        }
+            
         if (!empty($redirect_params['status'])) {
             $status = $redirect_params['status'];
             unset($redirect_params['status']);
         } else {
             $status = self::DEFAULT_REDIRECT_STATUS;
         }
-        
-        $url = Rails::application()->router()->urlFor($redirect_params);
         
         $this->response()->headers()->location($url);
         $this->response()->headers()->status($status);
