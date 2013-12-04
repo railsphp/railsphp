@@ -66,7 +66,7 @@ class FileStore extends AbstractStore
         }
     }
     
-    public function clear()
+    public function clear(array $options = [])
     {
         Toolbox\FileTools::emptyDir($this->basePath);
     }
