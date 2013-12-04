@@ -43,8 +43,9 @@ class MemCachedStore extends AbstractStore
     public function write($key, $val, array $params)
     {
         if (isset($params['expires_in'])) {
-            if (!ctype_digit((string)$params['expires_in']))
+            if (!ctype_digit((string)$params['expires_in'])) {
                 $expires_in = strtotime('+' . $params['expires_in']);
+            }
         } else {
             $expires_in = 0;
         }
@@ -65,6 +66,24 @@ class MemCachedStore extends AbstractStore
         else {
             # An error could have occured.
             return false;
+        }
+    }
+    
+    public function cleanup()
+    {
+    }
+    
+    public function clear()
+    {
+        $this->connection->flush();
+    }
+    
+    public function deleteMatched($matcher, array $options = [])
+    {
+        foreach ($this->connection->getAllKeys() as $key) {
+            if (preg_match($matcher, $key)) {
+                $this->connection->delete($key);
+            }
         }
     }
 }

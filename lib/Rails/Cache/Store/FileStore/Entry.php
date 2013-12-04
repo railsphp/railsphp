@@ -33,7 +33,7 @@ class Entry
     {
         $this->store = $store;
         
-        $this->_key = $key;
+        $this->_key  = $key;
         $this->_hash = $this->_hash_key($key);
         
         if (isset($params['path'])) {
@@ -100,6 +100,14 @@ class Entry
         return $this->_file_exists;
     }
     
+    public function expired()
+    {
+        if (!isset($this->params['expires_in']) || $this->params['expires_in'] > time()) {
+            return false;
+        }
+        return true;
+    }
+    
     public function unserialize_e_handler()
     {
         $this->_value = false;
@@ -109,7 +117,7 @@ class Entry
     {
         $this->_file_contents = file_get_contents($this->_file_name());
         $this->_parse_contents();
-        if ($this->_expired()) {
+        if ($this->expired()) {
             $this->delete();
         } else {
             
@@ -143,13 +151,6 @@ class Entry
         set_error_handler($err_handler);
     }
     
-    private function _expired()
-    {
-        if (!isset($this->params['expires_in']) || $this->params['expires_in'] > time())
-            return false;
-        return true;
-    }
-    
     private function _delete_file()
     {
         if (is_file($this->_file_name()))
@@ -159,7 +160,7 @@ class Entry
     
     private function _file_name()
     {
-        return $this->_path() . '/' . $this->_hash;
+        return $this->_path() . '/' . urlencode($this->_key);
     }
     
     private function _hash_key($key)

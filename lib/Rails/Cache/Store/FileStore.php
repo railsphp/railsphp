@@ -2,7 +2,7 @@
 namespace Rails\Cache\Store;
 
 use Rails;
-use Rails\Toolbox\Toolbox;
+use Rails\Toolbox;
 use Rails\Cache\Store\FileStore\Entry;
 
 /**
@@ -45,13 +45,41 @@ class FileStore extends AbstractStore
         $dirpath = $this->path() . '/' . $dirname;
         
         if (is_dir($dirpath)) {
-            Toolbox::emptyDir($dirpath);
+            ToolboxºFileTools::emptyDir($dirpath);
         }
     }
     
     public function basePath()
     {
         return $this->basePath;
+    }
+    
+    public function cleanup(array $options = [])
+    {
+        $files = glob($this->basePath . '/*');
+        foreach ($files as $path) {
+            $key = urldecode(end(explode(DIRECTORY_SEPARATOR, $path)));
+            $entry = $this->getEntry($key, []);
+            if ($entry->expired()) {
+                $entry->delete();
+            }
+        }
+    }
+    
+    public function clear()
+    {
+        Toolbox\FileTools::emptyDir($this->basePath);
+    }
+    
+    public function deleteMatched($matcher, array $options = [])
+    {
+        $allFiles = Toolbox\FileTools::searchFile($this->basePath);
+        foreach ($allFiles as $file) {
+            $key = urldecode(substr($file, strrpos($file, DIRECTORY_SEPARATOR) + 1));
+            if (preg_match($matcher, $key)) {
+                $this->getEntry($key, [])->delete();
+            }
+        }
     }
     
     protected function getEntry($key, array $params)
