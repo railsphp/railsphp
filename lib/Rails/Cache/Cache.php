@@ -24,6 +24,10 @@ class Cache
                 $class = '\Rails\Cache\Store\MemCachedStore';
                 break;
             
+            case 'null_store':
+                $class = '\Rails\Cache\Store\NullStore';
+                break;
+            
             default:
                 $class = $config[0];
                 break;

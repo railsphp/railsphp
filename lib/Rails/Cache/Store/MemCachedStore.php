@@ -69,11 +69,11 @@ class MemCachedStore extends AbstractStore
         }
     }
     
-    public function cleanup()
+    public function cleanup(array $options = [])
     {
     }
     
-    public function clear()
+    public function clear(array $options = [])
     {
         $this->connection->flush();
     }
