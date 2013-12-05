@@ -413,8 +413,7 @@ abstract class Base
     public function save(array $opts = array())
     {
         if ($this->isNewRecord()) {
-            if (!$this->_create_do($opts))
-                return false;
+            return $this->_create_do($opts);
         } else {
             if (!$this->_validate_data('save', $opts))
                 return false;
@@ -622,7 +621,7 @@ abstract class Base
         }
         
         if ($block) {
-            $result = $block();
+            $result = (bool)$block();
         } else {
             $result = true;
         }
@@ -1038,10 +1037,12 @@ abstract class Base
         }
         $reflection = self::getReflection();
         
-        if ($reflection->hasMethod($setter) && $reflection->getMethod($setter)->isPublic()) {
-            return $setter;
-        } else {
-            return false;
+        if ($reflection->hasMethod($setter)) {
+            $method = $reflection->getMethod($setter);
+            if ($method->isPublic() && !$method->isStatic()) {
+                return $setter;
+            }
         }
+        return false;
     }
 }
