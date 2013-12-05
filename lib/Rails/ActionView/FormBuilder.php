@@ -37,7 +37,7 @@ class FormBuilder
     public function checkBox($property, array $attrs = array(), $checked_value = '1', $unchecked_value = '0')
     {
         $this->helper->setDefaultModel($this->model);
-        return $this->helper->passwordField($this->inputNamespace, $property, $attrs, $checked_value, $unchecked_value);
+        return $this->helper->checkBox($this->inputNamespace, $property, $attrs, $checked_value, $unchecked_value);
     }
     
     public function textArea($property, array $attrs = array())
@@ -83,6 +83,12 @@ class FormBuilder
         }
         
         return $this->helper->tag('input', array_merge($options, ['value' => $value, 'type' => 'submit']));
+    }
+    
+    public function field($type, $property, array $attrs = array())
+    {
+        $this->helper->setDefaultModel($this->model);
+        return $this->helper->formField($type, $this->inputNamespace, $property, $attrs);
     }
     
     public function object()
