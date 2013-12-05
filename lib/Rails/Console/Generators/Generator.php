@@ -43,7 +43,7 @@ class Generator
                     $this->generateController();
                     break;
                 
-                case 'db-schema':
+                case 'db:schema':
                     Toolbox\DbTools::generateSchemaFiles();
                     break;
                 
