@@ -119,9 +119,9 @@ class UrlHelpers
     public function find_route_for_token($token, $params = [])
     {
         if ($params instanceof \Rails\ActiveRecord\Base) {
-            $model = $params;
+            $model  = $params;
         } else {
-            $model = false;
+            $model  = false;
         }
         
         if ($this->useCache()) {
@@ -131,7 +131,6 @@ class UrlHelpers
                     if ($model) {
                         $params = $this->extract_route_vars_from_model($route, $model);
                     }
-                    
                     if ($route->match_with_token($token, $params)) {
                         return $k;
                     }
@@ -141,6 +140,9 @@ class UrlHelpers
             
             if ($index) {
                 $route = $this->router()->routes()->routes()->offsetGet($index);
+                if ($model) {
+                    $params = $this->extract_route_vars_from_model($route, $model);
+                }
                 $url   = $route->match_with_token($token, $params);
                 if ($base_path = $this->router()->basePath()) {
                     $url = $base_path . $url;
