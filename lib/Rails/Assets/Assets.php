@@ -66,7 +66,7 @@ class Assets
     public function console($message)
     {
         if ($this->console) {
-            $this->console->write($message);
+            $this->console->put($message);
         }
     }
     
