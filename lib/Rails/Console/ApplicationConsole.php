@@ -94,11 +94,26 @@ class ApplicationConsole extends Console
                 $this->write($routes);
                 break;
             
+            /**
+             * Install database.
+             */
+            case 'db:create':
+                $m = new \Rails\ActiveRecord\Migration\Migrator();
+                $m->loadSchema();
+                break;
+            
+            /**
+             * Run all/pending migrations.
+             * Creates migrations table as well.
+             */
             case 'db:migrate':
                 $m = new \Rails\ActiveRecord\Migration\Migrator();
                 $m->run();
                 break;
             
+            /**
+             * Runs seeds.
+             */
             case 'db:seed':
                 $m = new \Rails\ActiveRecord\Migration\Migrator();
                 $m->runSeeds();
