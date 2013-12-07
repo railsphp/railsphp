@@ -34,14 +34,15 @@ class Dumper
         $this->dumper = $dumper;
     }
     
-    public function export($file)
+    public function export($outputFile)
     {
         $sql = $this->dumper->export();
-        file_put_contents($file, $sql);
+        file_put_contents($outputFile, $sql);
     }
     
-    // public function setOutputFile($path)
-    // {
-        // $this->outputFile = $path;
-    // }
+    public function import($inputFile)
+    {
+        $sql = file_get_contents($inputFile);
+        $this->dumper->import($sql);
+    }
 }
