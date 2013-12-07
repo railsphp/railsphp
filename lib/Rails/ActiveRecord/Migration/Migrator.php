@@ -33,7 +33,7 @@ class Migrator
     
     public function runSeeds()
     {
-        if ($this->pendingMigrations()) {
+        if ($this->getPendingMigrations()) {
             return;
         }
         $file = Rails::root() . '/db/seeds.php';
