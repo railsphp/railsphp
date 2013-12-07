@@ -64,9 +64,8 @@ final class Rails
         
         /**
          * Set environment.
-         * Note that it will be development when running from cli.
          */
-        self::$env = self::$cli ? 'development' : RAILS_ENV;
+        self::$env = RAILS_ENV;
         
         self::$config = self::defaultConfig();
         
