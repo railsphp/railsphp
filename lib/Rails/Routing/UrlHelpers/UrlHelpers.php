@@ -138,7 +138,7 @@ class UrlHelpers
                 return false;
             });
             
-            if ($index) {
+            if ($index !== false) {
                 $route = $this->router()->routes()->routes()->offsetGet($index);
                 if ($model) {
                     $params = $this->extract_route_vars_from_model($route, $model);
