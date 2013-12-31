@@ -242,13 +242,13 @@ class Parameters implements \IteratorAggregate
         foreach ($arr['name'] as $k => $value) {
             if (is_string($value)) {
                 if ($arr['error'] != UPLOAD_ERR_NO_FILE) {
-                    $arranged[$k] = [
+                    $arranged[$k] = new UploadedFile([
                         'name'     => $value,
                         'type'     => $arr['type'][$k],
                         'tmp_name' => $arr['tmp_name'][$k],
                         'error'    => $arr['error'][$k],
                         'size'     => $arr['size'][$k],
-                    ];
+                    ]);
                 }
             } else {
                 $keys = ['name', $k];
