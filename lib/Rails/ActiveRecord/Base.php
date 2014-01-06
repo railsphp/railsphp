@@ -286,20 +286,9 @@ abstract class Base
         );
     }
     
-    /**
-     * 1. Checks for setter method and calls it if available.
-     * 2. If the property is an attribute, the value is set to it (i.e. default setter for attributes).
-     * 3. The value is set as object property. < This shouldn't happen!
-     */
     public function __set($prop, $val)
     {
-        if (static::isAttribute($prop)) {
-            $this->setAttribute($prop, $val);
-        } else {
-            throw new Exception\RuntimeException(
-                sprintf("Trying to set undefined property %s", $prop)
-            );
-        }
+        $this->setProperty($prop, $val);
     }
     
     public function __isset($prop)
