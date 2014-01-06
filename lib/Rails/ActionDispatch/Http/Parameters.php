@@ -17,6 +17,8 @@ class Parameters implements \IteratorAggregate
     
     private $files;
     
+    private $routeVars = [];
+    
     public function getIterator()
     {
         return new ArrayIterator($this->toArray());
@@ -74,9 +76,18 @@ class Parameters implements \IteratorAggregate
         }
     }
     
+    /**
+     * Note the order in which the parameters are returned:
+     * Route, get, post, etc.
+     */
     public function __get($prop)
     {
         $ret = null;
+        
+        if (isset($this->routeVars[$prop])) {
+            return $this->routeVars[$prop];
+        }
+        
         $var = $this->_search($prop);
         if ($var) {
             global ${$var};
@@ -123,6 +134,14 @@ class Parameters implements \IteratorAggregate
         return $this->_search($prop) || isset($this->deleteVars[$prop]) || isset($this->putVars[$prop]);
     }
     
+    public function setRouteVars(array $vars)
+    {
+        $this->routeVars = $vars;
+    }
+    
+    /**
+     * Deletes a var.
+     */
     public function del($prop)
     {
         unset($this->$prop, $_GET[$prop], $_POST[$prop], $this->deleteVars[$prop], $this->putVars[$prop]);
@@ -156,6 +175,11 @@ class Parameters implements \IteratorAggregate
     public function files()
     {
         return $this->files;
+    }
+    
+    public function route()
+    {
+        return $this->routeVars;
     }
     
     public function user()
