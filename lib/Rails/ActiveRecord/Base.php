@@ -293,27 +293,13 @@ abstract class Base
      */
     public function __set($prop, $val)
     {
-        // if (!Rails::config()->ar2) {
         if (static::isAttribute($prop)) {
             $this->setAttribute($prop, $val);
-        // } elseif ($this->setterExists($prop)) {
-            // $this->_run_setter($prop, $val);
         } else {
             throw new Exception\RuntimeException(
                 sprintf("Trying to set undefined property %s", $prop)
             );
-            // # Default PHP behaviour.
-            // $this->$prop = $val;
         }
-        // } else {
-            // if (static::isAttribute($prop)) {
-                // $this->setAttribute($prop, $val);
-            // } else {
-                // throw new Exception\RuntimeException(
-                    // sprintf("Trying to set undefined property %s", $prop)
-                // );
-            // }
-        // }
     }
     
     public function __isset($prop)
