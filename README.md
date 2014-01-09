@@ -1,4 +1,4 @@
-RailsPHP Framework
-==================
+MyImouto RailsPHP
+=================
 
-This is yet another PHP framework based on Ruby on Rails, for PHP 5.4+.
+MyImouto development requires the framework to make some important changes that may affect other systems using it. Having its own fork will avoid this problem.

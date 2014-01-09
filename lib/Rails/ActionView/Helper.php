@@ -66,6 +66,11 @@ abstract class Helper extends ActionView
         return Rails::application()->dispatcher()->request();
     }
     
+    public function session()
+    {
+        return Rails::application()->dispatcher()->session();
+    }
+    
     public function controller()
     {
         return Rails::application()->controller();

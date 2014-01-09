@@ -33,18 +33,6 @@ class Router
      */
     private $_request_path;
     
-    
-    // private
-        /**
-         * Rails_Router_Route instance that holds the root route.
-         */
-        // $_root,
-        /**
-         * Rails_Router_Route instance that holds the panel route.
-         */
-        // $_admin,
-        // $_assets;
-    
     /**
      * Rails_Router_Route instance that matched the request.
      */
@@ -108,8 +96,6 @@ class Router
     
     public function rootPath()
     {
-        ############ WARNING
-        ############ MUST UPDATE ALL SYSTEMS TO THIS CHANGE (added trailing slash when returning basePath)
         if ($base_path = $this->basePath())
             return $base_path . '/';
         return '/';
@@ -123,16 +109,42 @@ class Router
     
     private function importRoutes()
     {
-        if ($this->_imported_routes)
+        if ($this->_imported_routes) {
             return;
+        }
         
         $this->_imported_routes = true;
+        
+        $useCache = Rails::env() == 'production';
         $this->_routes = new Route\RouteSet();
         
-        $config = Rails::config();
-        $routes_file = $config->paths->config->concat('routes.php');
+        if ($useCache) {
+            $key = 'Rails.routing.routes';
+            $cachedRoutes = Rails::cache()->read($key);
+        } else {
+            $cachedRoutes = false;
+        }
         
-        require $routes_file;
+        if ($useCache && $cachedRoutes) {
+            $this->_routes->drawCached($cachedRoutes);
+        } else {
+            $importRoutes = function() {
+                $config      = Rails::config();
+                $routes_file = $config->paths->config->concat('routes.php');
+                require $routes_file;
+            };
+            
+            if ($useCache) {
+                $this->_routes->setCacheRoutes(true);
+                $importRoutes();
+                
+                $cachedRoutes = $this->_routes->getCachedRoutes();
+                
+                Rails::cache()->write($key, $cachedRoutes);
+            } else {
+                $importRoutes();
+            }
+        }
     }
     
     private function matchRoutes()

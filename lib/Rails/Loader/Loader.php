@@ -20,8 +20,6 @@ class Loader
         if ($paths) {
             $this->addPaths($paths);
         }
-        
-        $this->loadRequiredClasses();
     }
     
     public function setComposerAutoload(\Composer\Autoload\ClassLoader $loader)
@@ -67,14 +65,23 @@ class Loader
         
         if (!$found) {
             require_once __DIR__ . '/Exception/FileNotFoundException.php';
-            throw new Exception\FileNotFoundException(sprintf("Couldn't find file for class %s, searched for %s in:\n%s", $class_name, $class_file_path, implode("\n", $paths)));
+            throw new Exception\FileNotFoundException(
+                sprintf(
+                    "Couldn't find file for class %s, searched for %s in:\n%s",
+                    $class_name,
+                    $class_file_path,
+                    implode("\n", $paths)
+                )
+            );
         }
         
         require $class_file;
         
         if (!class_exists($class_name, false) && !interface_exists($class_name, false) && !trait_exists($class_name, false)) {
             require_once __DIR__ . '/Exception/ClassNotFoundException.php';
-            throw new Exception\ClassNotFoundException(sprintf("File %s doesn't contain class/interface/trait %s.", $class_file, $class_name));
+            throw new Exception\ClassNotFoundException(
+                sprintf("File %s doesn't contain class/interface/trait %s.", $class_file, $class_name)
+            );
         }
     }
     
@@ -105,17 +112,12 @@ class Loader
                     return true;
             } else {
                 require_once __DIR__ . '/Exception/RuntimeException.php';
-                throw new Exception\RuntimeException(sprintf("Invalid autoloader type (%s)", gettype($autoload)));
+                throw new Exception\RuntimeException(
+                    sprintf("Invalid autoloader type (%s)", gettype($autoload))
+                );
             }
         }
         
         return false;
-    }
-    
-    /**
-     * Loader uses ActiveRecord and ActionMailer. These classes must be available.
-     */
-    protected function loadRequiredClasses()
-    {
     }
 }

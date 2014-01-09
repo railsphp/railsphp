@@ -96,7 +96,7 @@ trait AttributeMethods
                 $this->$propName = $value;
             } else {
                 throw new Exception\RuntimeException(
-                    sprintf("Can't write unknown attribute '%s' for model %s", $propName, get_called_class())
+                    sprintf("Can't write unknown property '%s' for model %s", $propName, get_called_class())
                 );
             }
         }
@@ -134,8 +134,6 @@ trait AttributeMethods
     {
         if (array_key_exists($name, $this->attributes)) {
             return $this->attributes[$name];
-        // } elseif (!Rails::config()->ar2 && static::table()->columnExists(static::properAttrName($name))) {
-            // return null;
         } elseif (static::table()->columnExists($name)) {
             return null;
         }
@@ -158,7 +156,14 @@ trait AttributeMethods
         } elseif ((string)$this->getAttribute($name) != (string)$value) {
             $this->setChangedAttribute($name, $this->$name);
         }
-        $this->attributes[$name] = $value;
+        
+        # If setter exists for this attribute, it will have to set the attribute itself.
+        if ($setter = $this->setterExists($name)) {
+            $this->$setter($value);
+        } else {
+            $this->attributes[$name] = $value;
+        }
+        
         return $this;
     }
     
@@ -194,27 +199,10 @@ trait AttributeMethods
         if (!$attrs) {
             return;
         }
-        // if (get_called_class() == 'TagImplication')
-            // vpe('a', $attrs);
         
         if (empty($options['without_protection'])) {
             $this->filterProtectedAttributes($attrs);
         }
-        
-        // if (!Rails::config()->ar2) {
-            // foreach ($attrs as $attr => $v) {
-                // if ($this->setterExists($attr)) {
-                    // $this->_run_setter($attr, $v);
-                // } else {
-                    // $this->$attr = $v;
-                // }
-            // }
-            // return;
-        // }
-        
-        // if (get_called_class() == 'TagImplication' && !in_array($propName, ['reason', 'creator_id', 'is_pending']))
-        // $inflector = Rails::services()->get('inflector');
-        // $reflection = new \ReflectionClass(get_called_class());
         
         foreach ($attrs as $attrName => $value) {
             $this->setProperty($attrName, $value);
@@ -227,7 +215,7 @@ trait AttributeMethods
         $this->runCallbacks('before_update');
         
         /**
-         * iTODO: Must let know save() we're updating, so it will
+         * TODO: Must let know save() we're updating, so it will
          * validate data with action "update" and not "save".
          * Should separate save() and make this and update_attribute call
          * something like update()?

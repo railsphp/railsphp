@@ -36,17 +36,16 @@ class MemCachedStore extends AbstractStore
                 # There was some kind of error.
             }
         } else {
-            return unserialize($value);
+            return $value;
         }
     }
     
     public function write($key, $val, array $params)
     {
-        $val = serialize($val);
-        
         if (isset($params['expires_in'])) {
-            if (!ctype_digit((string)$params['expires_in']))
+            if (!ctype_digit((string)$params['expires_in'])) {
                 $expires_in = strtotime('+' . $params['expires_in']);
+            }
         } else {
             $expires_in = 0;
         }
@@ -67,6 +66,24 @@ class MemCachedStore extends AbstractStore
         else {
             # An error could have occured.
             return false;
+        }
+    }
+    
+    public function cleanup(array $options = [])
+    {
+    }
+    
+    public function clear(array $options = [])
+    {
+        $this->connection->flush();
+    }
+    
+    public function deleteMatched($matcher, array $options = [])
+    {
+        foreach ($this->connection->getAllKeys() as $key) {
+            if (preg_match($matcher, $key)) {
+                $this->connection->delete($key);
+            }
         }
     }
 }

@@ -119,10 +119,7 @@ class ActionDispatch
     {
         $vars = $this->_router->route()->vars();
         unset($vars['controller'], $vars['action']);
-        foreach ($vars as $name => $val) {
-            if ($this->_parameters->$name === null)
-                $this->_parameters->$name = $val;
-        }
+        $this->_parameters->setRouteVars($vars);
     }
     
     private function _action_name()

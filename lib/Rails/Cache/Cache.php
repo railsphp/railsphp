@@ -24,6 +24,10 @@ class Cache
                 $class = '\Rails\Cache\Store\MemCachedStore';
                 break;
             
+            case 'null_store':
+                $class = '\Rails\Cache\Store\NullStore';
+                break;
+            
             default:
                 $class = $config[0];
                 break;
@@ -36,26 +40,41 @@ class Cache
     
     public function read($key, array $params = [])
     {
+        if (is_array($key)) {
+            $key = $this->hashToKey($key);
+        }
         return $this->store->read($key, $params);
     }
     
     public function write($key, $value, array $options = [])
     {
+        if (is_array($key)) {
+            $key = $this->hashToKey($key);
+        }
         return $this->store->write($key, $value, $options);
     }
     
     public function delete($key, array $params = [])
     {
+        if (is_array($key)) {
+            $key = $this->hashToKey($key);
+        }
         return $this->store->delete($key, $params);
     }
     
     public function exists($key)
     {
+        if (is_array($key)) {
+            $key = $this->hashToKey($key);
+        }
         return $this->store->exists($key);
     }
     
     public function fetch($key, $options = null, Closure $block = null)
     {
+        if (is_array($key)) {
+            $key = $this->hashToKey($key);
+        }
         if ($options instanceof Closure) {
             $block = $options;
             $options = [];
@@ -69,6 +88,21 @@ class Cache
         return $value;
     }
     
+    public function cleanup(array $options = [])
+    {
+        $this->store->cleanUp($options);
+    }
+    
+    public function clear(array $options = [])
+    {
+        $this->store->clear($options);
+    }
+    
+    public function deleteMatched($matcher, array $options = [])
+    {
+        $this->store->deleteMatched($matcher, $options);
+    }
+    
     public function readMulti()
     {
         $names = func_get_args();
@@ -79,8 +113,12 @@ class Cache
         
         $results = [];
         foreach ($names as $name) {
-            if (null !== ($value = $this->read($name)))
+            if (is_array($name)) {
+                $name = $this->hashToKey($name);
+            }
+            if (null !== ($value = $this->read($name))) {
                 $results[$name] = $value;
+            }
         }
         return $results;
     }
@@ -88,5 +126,14 @@ class Cache
     public function store()
     {
         return $this->store;
+    }
+    
+    protected function hashToKey(array $hash)
+    {
+        $key = '';
+        foreach ($hash as $k => $v) {
+            $key .= $k . '=' . $v;
+        }
+        return $key;
     }
 }

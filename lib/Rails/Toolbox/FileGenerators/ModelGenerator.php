@@ -82,7 +82,7 @@ class ModelGenerator extends AbstractGenerator
         }
         
         if ($console) {
-            $console->terminate("Created file: " . $filePath);
+            $console->write("Created file: " . $filePath);
         } else {
             return true;
         }
@@ -94,6 +94,7 @@ class ModelGenerator extends AbstractGenerator
 class %className% extends %parent%
 {
     
-}';
+}
+';
     }
 }

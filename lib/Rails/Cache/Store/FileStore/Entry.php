@@ -33,7 +33,7 @@ class Entry
     {
         $this->store = $store;
         
-        $this->_key = $key;
+        $this->_key  = $key;
         $this->_hash = $this->_hash_key($key);
         
         if (isset($params['path'])) {
@@ -54,7 +54,12 @@ class Entry
     
     public function write($val)
     {
-        $this->_value = serialize($val);
+        if (is_string($val)) {
+            $this->params['type'] = 'string';
+            $this->_value = $val;
+        } else {
+            $this->_value = serialize($val);
+        }
         
         if (isset($this->params['expires_in'])) {
             if (!ctype_digit((string)$this->params['expires_in']))
@@ -64,7 +69,6 @@ class Entry
             $this->_dir = $this->params['path'];
             unset($this->params['path']);
         }
-        $this->params = $this->params;
         
         $header = [];
         foreach ($this->params as $k => $v)
@@ -96,6 +100,14 @@ class Entry
         return $this->_file_exists;
     }
     
+    public function expired()
+    {
+        if (!isset($this->params['expires_in']) || $this->params['expires_in'] > time()) {
+            return false;
+        }
+        return true;
+    }
+    
     public function unserialize_e_handler()
     {
         $this->_value = false;
@@ -105,7 +117,7 @@ class Entry
     {
         $this->_file_contents = file_get_contents($this->_file_name());
         $this->_parse_contents();
-        if ($this->_expired()) {
+        if ($this->expired()) {
             $this->delete();
         } else {
             
@@ -116,6 +128,7 @@ class Entry
     {
         $regex = '/^(\V+)/';
         preg_match($regex, $this->_file_contents, $m);
+        
         if (!empty($m[1])) {
             foreach(explode(self::DATA_SEPARATOR, $m[1]) as $data) {
                 list($key, $val) = explode(self::KEY_VALUE_SEPARATOR, $data);
@@ -127,17 +140,15 @@ class Entry
         # For some reason, try/catch Exception didn't work.
         $err_handler = set_error_handler([$this, "unserialize_e_handler"]);
         
-        $this->_value = unserialize(str_replace($m[1] . "\n", '', $this->_file_contents));
+        if (isset($this->params['type']) && $this->params['type'] == 'string') {
+            $this->_value = str_replace($m[1] . "\n", '', $this->_file_contents);
+        } else {
+            $this->_value = unserialize(str_replace($m[1] . "\n", '', $this->_file_contents));
+        }
+        
         $this->_file_contents = null;
         
         set_error_handler($err_handler);
-    }
-    
-    private function _expired()
-    {
-        if (!isset($this->params['expires_in']) || $this->params['expires_in'] > time())
-            return false;
-        return true;
     }
     
     private function _delete_file()
@@ -149,7 +160,7 @@ class Entry
     
     private function _file_name()
     {
-        return $this->_path() . '/' . $this->_hash;
+        return $this->_path() . '/' . urlencode($this->_key);
     }
     
     private function _hash_key($key)

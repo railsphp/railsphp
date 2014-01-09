@@ -93,6 +93,38 @@ class ApplicationConsole extends Console
                 
                 $this->write($routes);
                 break;
+            
+            /**
+             * Install database.
+             */
+            case 'db:create':
+                $m = new \Rails\ActiveRecord\Migration\Migrator();
+                $m->loadSchema();
+                break;
+            
+            /**
+             * Run all/pending migrations.
+             * Creates migrations table as well.
+             */
+            case 'db:migrate':
+                $m = new \Rails\ActiveRecord\Migration\Migrator();
+                $m->run();
+                break;
+            
+            /**
+             * Runs seeds.
+             */
+            case 'db:seed':
+                $m = new \Rails\ActiveRecord\Migration\Migrator();
+                $m->runSeeds();
+                break;
+            
+            case 'db:schema:dump':
+                $dumper = new \Rails\ActiveRecord\Schema\Dumper(
+                    \Rails\ActiveRecord\ActiveRecord::connection()
+                );
+                $dumper->export(\Rails::root() . '/db/schema.sql');
+                break;
         }
     }
     
@@ -114,14 +146,14 @@ class ApplicationConsole extends Console
         }
         
         $aliasMaxLen = 0;
-        $viaMaxLen = 0;
-        $pathMaxLen = 0;
-        $toMaxLen = 0;
+        $viaMaxLen   = 0;
+        $pathMaxLen  = 0;
+        $toMaxLen    = 0;
         
         foreach ($routes as $route) {
             $aliasLen = strlen($route[0]);
-            $viaLen = strlen($route[1]);
-            $pathLen = strlen($route[2]);
+            $viaLen   = strlen($route[1]);
+            $pathLen  = strlen($route[2]);
             
             if ($aliasLen > $aliasMaxLen)
                 $aliasMaxLen = $aliasLen;

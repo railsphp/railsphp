@@ -256,16 +256,16 @@ $config->eager_load_paths = [];
  * cache_store ( string 'file_store', string $cache_path )
  *
  * For Memcached
- * cache_store ( string 'memcached' [, mixed $server1 [, mixed $server2 ... ] ] )
+ * cache_store ( string 'mem_cached_store' [, mixed $server1 [, mixed $server2 ... ] ] )
  * Defaults to host "localhost" and port 11211.
  * Examples:
  * Add 1 server with default options.
- * $config->cache_store = [ 'memcached' ];
+ * $config->cache_store = 'mem_cached_store';
  * Add 1 server with foobarhost as host and default port.
- * $config->cache_store = [ 'memcached', 'foobarhost' ];
+ * $config->cache_store = [ 'mem_cached_store', 'foobarhost' ];
  * Add 2 servers: one with localhost as host with default port, and the other one
  *  with other.server as host and 4456 as port.
- * $config->cache_store = [ 'memcached', 'localhost', ['other.server', 4456] ];
+ * $config->cache_store = [ 'mem_cached_store', 'localhost', ['other.server', 4456] ];
  */
 $config->cache_store = ['file_store', Rails::root() . '/tmp/cache'];
 

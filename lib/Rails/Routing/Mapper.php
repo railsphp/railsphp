@@ -27,6 +27,8 @@ class Mapper
     
     private $createAsMember = false;
     
+    private $createAsCollection = false;
+    
     private $resources = [];
     
     private $resource = [];
@@ -34,17 +36,10 @@ class Mapper
     private $resourceNesting = [];
     
     private $routeSet;
-
+    
     public function __construct(Route\RouteSet $routeSet)
     {
         $this->routeSet = $routeSet;
-    }
-    
-    public function __call($method, $params)
-    {
-        if ($method == 'namespace') {
-            call_user_func_array([$this, 'namespaced'], $params);
-        }
     }
     
     /**
@@ -169,6 +164,15 @@ class Mapper
     public function concern($name, Closure $block)
     {
         $this->concernList[$name] = $block;
+    }
+    
+    public function collection(Closure $block)
+    {
+        $this->createAsCollection = true;
+        $this->scopeParams[] = ['on' => 'collection'];
+        $block();
+        array_pop($this->scopeParams);
+        $this->createAsCollection = false;
     }
     
     private function createRoutesWithResource($multiple, $params, Closure $block = null)
@@ -360,8 +364,8 @@ class Mapper
     
     private function createResourceNestedRoute($action, $params, $multiple = true, $to = null)
     {
-        $path = '';
-        $setAlias = true;
+        $path      = '';
+        $setAlias  = true;
         $resources = $this->resources;
         
         if (isset($params['as'])) {
@@ -380,7 +384,7 @@ class Mapper
             
             if ($this->createAsMember || (isset($params['on']) && $params['on'] == 'member'))
                 $path .= '/:id';
-            else
+            elseif (!isset($params['on']) || $params['on'] != 'collection')
                 $path .= '/:' . $res . '_id';
             
             $pre_alias .= '_' . $res;
@@ -534,6 +538,20 @@ class Mapper
             $to = null;
         }
         $params['via'] = $via;
+        
+        # If inside resources, create an alias using the resources names.
+        if ($this->resources) {
+            if (!array_key_exists('as', $params)) {
+                if (preg_match('/^[\w\/]+$/', $url)) {
+                    $alias = str_replace('/', '_', $url);
+                }
+                $alias .= '_' . implode($this->resources, '_');
+                if (!$this->createAsCollection) {
+                    $alias = Rails::services()->get('inflector')->singularize($alias);
+                }
+                $params['as'] = $alias;
+            }
+        }
         
         $this->createAndAddRoute($url, $to, $params);
     }
