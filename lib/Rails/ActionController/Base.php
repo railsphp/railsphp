@@ -632,7 +632,9 @@ abstract class Base extends ActionController
                         }
                         $ext = [$format, 'php'];
                         
-                        $this->response()->headers()->contentType($format);
+                        if (!$this->response()->headers()->contentType()) {
+                            $this->response()->headers()->setContentType($format);
+                        }
                     }
                 } else {
                     $pinfo = pathinfo($main_param);
