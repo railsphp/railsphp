@@ -30,6 +30,17 @@ class Notifier
     
     protected function getCallbacks($modelClass)
     {
+        if (Rails::env() == 'production') {
+            return Rails::cache()->fetch('Rails.ActiveRecord.Observer.Callbacks.' . $modelClass, function() use ($modelClass) {
+                return $this->findCallbacks($modelClass);
+            });
+        } else {
+            return $this->findCallbacks($modelClass);
+        }
+    }
+    
+    protected function findCallbacks($modelClass)
+    {
         $callbacks = [];
         
         if ($observers = Rails::config()->active_record->observers->toArray()) {
@@ -43,9 +54,9 @@ class Notifier
                     
                     foreach ($refl->getMethods() as $method) {
                         if (
-                            $method->isPublic()
-                            && !$method->isStatic()
-                            && preg_match($observerMethodRegex, $method->name)
+                            $method->isPublic() &&
+                            !$method->isStatic() &&
+                            preg_match($observerMethodRegex, $method->name)
                         ) {
                             $callbacks[$observerClass][] = $method->name;
                         }
