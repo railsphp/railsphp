@@ -85,4 +85,9 @@ class Config implements \ArrayAccess, \IteratorAggregate
     {
         return array_keys($this->container);
     }
+    
+    public function any()
+    {
+        return (bool)$this->container;
+    }
 }
