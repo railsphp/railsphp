@@ -605,7 +605,7 @@ class Route
             elseif ($var['type'] == '*')
                 $repl = '(.*?)';
             else
-                $repl = '([^\/]+?)';
+                $repl = '([^\/\.]+?)';
             $repls[] = $repl;
             $type    = $var['type'] == '*' ? '\*' : $var['type'];
             $subjs[] = '/' . $type . $name . '/';
