@@ -66,13 +66,11 @@ $config->ar2 = false;
 
 $config->active_record = [
     'use_cached_schema' => false,
-    // 'base' => [
-        // /**
-         // * If true, overloading attributes or associations via __get() won't work
-         // * on models. This is temporary, as now overloading should be don't through __call().
-         // */
-        // 'call_only_attr_overload' => false
-    // ]
+    /**
+     * Array containing the class names of observers.
+     * E.g. PostObserver, CommentObserver.
+     */
+    'observers' => []
 ];
 
 $config->action_view = [

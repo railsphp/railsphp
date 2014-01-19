@@ -592,8 +592,10 @@ abstract class Base
                 if (false === $this->$method()) {
                     return false;
                 }
+                
             }
         }
+        $this->notifyObservers('before_' . $callbackName);
         
         if ($block) {
             $result = (bool)$block();
@@ -608,8 +610,16 @@ abstract class Base
                 }
             }
         }
+        $this->notifyObservers('after_' . $callbackName);
         
         return $result;
+    }
+    
+    protected function notifyObservers($callbackName)
+    {
+        if (Rails::config()->active_record->observers->any()) {
+            Observer\Notifier::instance()->notify($callbackName, $this);
+        }
     }
     
     public function getCallbacks($name, $kind)
@@ -624,27 +634,6 @@ abstract class Base
         return [];
     }
     
-    // private function getParentsCallbacks()
-    // {
-        // $parentCallbacks = array();
-        
-        // if (($class = get_parent_class($this)) != __CLASS__) {
-            // $class = self::cn();
-            // $obj   = new $class();
-
-            // while (($class = get_parent_class($obj)) != __CLASS__) {
-                // self::$preventInit = true;
-                
-                // $obj = new $class();
-                // if ($callbacks = $obj->callbacks()) {
-                    #if (isset($callbacks[$callback_name]))
-                    // $parentCallbacks = array_merge($callbacks, $callbacks[$callback_name]); 
-                // }
-            // }
-        // }
-        // return $parentCallbacks;
-    // }
-    
     /**
      * Merges model's callbacks and "plugged" callbacks.
      * If under production environment, the callbacks will be cached.
@@ -653,10 +642,16 @@ abstract class Base
     {
         if (Rails::env() == 'production') {
             return Rails::cache()->fetch('rails.models.' . get_called_class() . '.callbacks', function() {
-                return array_merge_recursive($this->callbacks(), $this->pluggedCallbacks());
+                return array_merge_recursive(
+                    $this->callbacks(),
+                    $this->pluggedCallbacks()
+                );
             });
         } else {
-            return array_merge_recursive($this->callbacks(), $this->pluggedCallbacks());
+            return array_merge_recursive(
+                $this->callbacks(),
+                $this->pluggedCallbacks()
+            );
         }
     }
     
@@ -681,18 +676,6 @@ abstract class Base
         
         return $callbacks;
     }
-    
-    // private function mergeAllCallbacks()
-    // {
-        // $parents = $this->getParentsCallbacks();
-        // $others  = $this->getPluggedCallbacks();
-        // return array_merge_recursive($parents, $others);
-    // }
-    
-    // private function filterCallbacks($allCallbacks, $name)
-    // {
-        // $
-    // }
     
     /**
      * @return bool
