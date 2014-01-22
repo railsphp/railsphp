@@ -82,6 +82,16 @@ class Deliverer
         
         $this->message->setBody($this->body);
         
+        /**
+         * Set content-type to alternative if both text and html are being send.
+         */
+        if ($this->textTemplate && $this->htmlTemplate) {
+            $this->message
+                ->getHeaders()
+                    ->get('content-type')
+                        ->setType('multipart/alternative');
+        }
+        
         unset($this->textTemplate, $this->htmlTemplate);
     }
     

@@ -102,15 +102,13 @@ class Logger extends ZendLogger
     
     private function buildRequestInfo()
     {
-        if (\Rails::application()->dispatcher() && \Rails::application()->dispatcher()->request()) {
-            $method = \Rails::application()->dispatcher()->request()->method();
-            $route = \Rails::application()->dispatcher()->request()->fullPath();
-            $request = '[' . $method . '] ' . $route;
+        if (\Rails::application()->dispatcher() && ($request = \Rails::application()->dispatcher()->request())) {
+            $info = '[' . $request->remoteIp() . '] ' . $request->method() . ' ' . $request->fullPath();
         } elseif (\Rails::cli()) {
-            $request = '[cli]';
+            $info = '[cli]';
         } else {
-            $request = '';
+            $info = '';
         }
-        return $request;
+        return $info;
     }
 }

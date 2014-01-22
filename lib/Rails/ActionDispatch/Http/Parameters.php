@@ -136,7 +136,12 @@ class Parameters implements \IteratorAggregate
     
     public function setRouteVars(array $vars)
     {
-        $this->routeVars = $vars;
+        $this->routeVars = array_filter($vars, function($x) {
+            /**
+             * Filter empty strings.
+             */
+            return $x !== '';
+        });
     }
     
     /**
