@@ -82,6 +82,16 @@ class Deliverer
         
         $this->message->setBody($this->body);
         
+        /**
+         * Set content-type to alternative if both text and html are being send.
+         */
+        if ($this->textTemplate && $this->htmlTemplate) {
+            $this->message
+                ->getHeaders()
+                    ->get('content-type')
+                        ->setType('multipart/alternative');
+        }
+        
         unset($this->textTemplate, $this->htmlTemplate);
     }
     
@@ -149,12 +159,15 @@ class Deliverer
     
     private function addTemplates()
     {
+        $parts = [];
+        
         if ($this->textTemplate) {
             $content = $this->textTemplate->renderContent();
             $part = new Mime\Part($content);
             $part->type = 'text/plain';
             $part->encoding = Mime\Mime::ENCODING_QUOTEDPRINTABLE;
-            $this->body->addPart($part);
+            // $this->body->addPart($part);
+            $parts[] = $part;
         }
         
         if ($this->htmlTemplate) {
@@ -163,7 +176,9 @@ class Deliverer
             $part->type = 'text/html';
             $part->encoding = Mime\Mime::ENCODING_QUOTEDPRINTABLE;
             $this->body->addPart($part);
+            $parts[] = $part;
         }
+        $this->body->setParts($parts);
     }
     
     /**
