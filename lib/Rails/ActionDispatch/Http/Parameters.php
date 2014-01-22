@@ -197,7 +197,7 @@ class Parameters implements \IteratorAggregate
         $obj_vars = get_object_vars($this);
         unset($obj_vars['deleteVars'], $obj_vars['putVars'], $obj_vars['_json_params_error'], $obj_vars['patchVars'], $obj_vars['other_params'], $obj_vars['files']);
         
-        $ret = array_merge($_POST, $_GET, $obj_vars, $this->deleteVars, $this->putVars, $this->patchVars, $this->other_params/*, $this->files*/);
+        $ret = array_merge($_POST, $_GET, $obj_vars, $this->deleteVars, $this->putVars, $this->patchVars, $this->other_params, $this->routeVars/*, $this->files*/);
         return $ret;
     }
     
