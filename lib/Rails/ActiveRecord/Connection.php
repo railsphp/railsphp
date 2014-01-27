@@ -133,7 +133,7 @@ class Connection
             
             $msg  = "Error on database query execution\n";
             $msg .= $e->getMessage();
-            Rails::log()->message($msg);
+            Rails::log()->warning($msg);
         }
         return $stmt;
     }

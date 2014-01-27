@@ -878,7 +878,7 @@ abstract class Base
             static::connection()->executeSql($d);
             
             if (ActiveRecord::lastError()) {
-                $this->errors()->addToBase(ActiveRecord::lastError());
+                # The error is logged by Connection.
                 return false;
             }
         }
