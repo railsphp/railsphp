@@ -213,7 +213,7 @@ trait AttributeMethods
     {
         $this->assignAttributes($attrs);
         
-        if (!$this->_validate_data('update', $opts)) {
+        if (!$this->_validate_data('update')) {
             return false;
         }
         
