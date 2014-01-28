@@ -213,15 +213,15 @@ trait AttributeMethods
     {
         $this->assignAttributes($attrs);
         
-        if (!$this->_validate_data('update')) {
+        if (!$this->_validate_data('save')) {
             return false;
         }
         
-        $this->runCallbacks('update', function() {
-            return $this->_save_do();
+        return $this->runCallbacks('save', function() {
+            return $this->runCallbacks('update', function() {
+                return $this->_save_do();
+            });
         });
-        
-        return false;
     }
 
     /**
