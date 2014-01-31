@@ -255,8 +255,10 @@ class Parameters implements \IteratorAggregate
         $this->files = new \stdClass();
     
         foreach ($_FILES as $mainName => $data) {
-            if (!is_array($data['name']) && $data['error'] != UPLOAD_ERR_NO_FILE) {
-                $this->files->$mainName = new UploadedFile($_FILES[$mainName]);
+            if (!is_array($data['name'])) {
+                if ($data['error'] != UPLOAD_ERR_NO_FILE) {
+                    $this->files->$mainName = new UploadedFile($_FILES[$mainName]);
+                }
             } else {
                 $this->files->$mainName = $this->_get_subnames($data);
             }
@@ -266,7 +268,6 @@ class Parameters implements \IteratorAggregate
     private function _get_subnames(array $arr)
     {
         $arranged = new \ArrayObject();
-        // $arranged = [];
         
         foreach ($arr['name'] as $k => $value) {
             if (is_string($value)) {

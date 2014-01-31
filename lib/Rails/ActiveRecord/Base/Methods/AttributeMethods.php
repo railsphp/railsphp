@@ -212,19 +212,16 @@ trait AttributeMethods
     public function updateAttributes(array $attrs)
     {
         $this->assignAttributes($attrs);
-        $this->runCallbacks('before_update');
         
-        /**
-         * TODO: Must let know save() we're updating, so it will
-         * validate data with action "update" and not "save".
-         * Should separate save() and make this and update_attribute call
-         * something like update()?
-         */
-        if ($this->save(['action' => 'update'])) {
-            $this->runCallbacks('after_update');
-            return true;
+        if (!$this->_validate_data('save')) {
+            return false;
         }
-        return false;
+        
+        return $this->runCallbacks('save', function() {
+            return $this->runCallbacks('update', function() {
+                return $this->_save_do();
+            });
+        });
     }
 
     /**

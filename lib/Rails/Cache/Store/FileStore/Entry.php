@@ -153,8 +153,18 @@ class Entry
     
     private function _delete_file()
     {
-        if (is_file($this->_file_name()))
-            return unlink($this->_file_name());
+        if (is_file($this->_file_name())) {
+            /**
+             * Even though this happens only if is_file is true,
+             * sometimes the file is already gone by the time unlink
+             * is executed.
+             */
+            try {
+                unlink($this->_file_name());
+            } catch (Rails\Exception\PHPError\Warning $e) {
+                return false;
+            }
+        }
         return true;
     }
     
