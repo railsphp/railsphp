@@ -122,6 +122,11 @@ class Attributes
                 null;
     }
     
+    public function isAttribute($attrName)
+    {
+        return self::isClassAttribute($this->className, $attrName);
+    }
+    
     protected function setChangedAttribute($attrName, $oldValue)
     {
         $this->changedAttributes[$attrName] = $oldValue;

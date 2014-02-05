@@ -1,0 +1,4 @@
+es:
+  active_record:
+    errors:
+      invalid: Este registro es inválido.

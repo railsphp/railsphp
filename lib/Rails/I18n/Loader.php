@@ -29,9 +29,12 @@ class Loader
     
     public function addPaths(array $paths)
     {
-        foreach ($paths as $path) {
-            $this->addPath($path);
-        }
+        $this->paths = array_unique(array_merge($this->paths, $paths));
+    }
+    
+    public function paths()
+    {
+        return $this->paths;
     }
     
     public function loadTranslations($locale)
@@ -51,6 +54,7 @@ class Loader
         foreach ($this->files[$locale] as $file) {
             $ext    = pathinfo($file, PATHINFO_EXTENSION);
             $fileTr = [];
+            
             if ($ext == 'php') {
                 $fileTr = require $file;
                 
@@ -67,7 +71,6 @@ class Loader
                 $tr = array_merge_recursive($tr, $fileTr);
             }
         }
-        
         $this->loadedLocales[] = $locale;
         
         return $tr;
@@ -85,9 +88,9 @@ class Loader
             return;
         }
         
+        $files = [];
         foreach ($this->paths as $path) {
-            $dir     = new DirectoryIterator($path);
-            $files = [];
+            $dir = new DirectoryIterator($path);
             
             foreach ($dir as $finfo) {
                 if (!$finfo->isFile()) {
@@ -103,7 +106,6 @@ class Loader
                 $files[$locale][] = $finfo->getRealPath();
             }
         }
-        
         $this->files = $files;
         $this->filesCached = true;
     }

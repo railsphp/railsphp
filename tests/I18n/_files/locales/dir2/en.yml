@@ -1,0 +1,6 @@
+en:
+  active_record:
+    errors:
+      invalid: (2) This record is invalid.
+      length: The value is too long.
+      unique: This message is only in english.

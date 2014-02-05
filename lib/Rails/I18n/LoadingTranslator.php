@@ -2,9 +2,9 @@
 namespace Rails\I18n;
 
 /**
- * This translator uses Loader to load translation from files.
+ * This translator uses Loader to automatically load translation from files.
  */
-class LoadingTranslator extends AbstractTranslator
+class LoadingTranslator extends Translator
 {
     protected $loader;
     
@@ -23,23 +23,18 @@ class LoadingTranslator extends AbstractTranslator
         return $this->loader->availableLocales();
     }
     
-    public function translate($key, array $params = [], $locale = null, $throwE = false)
+    protected function getTranslation(array $keys, $locale)
     {
-        $this->loadTranslations($locale ?: $this->locale);
-        return parent::translate($key, $params, $locale, $throwE);
-    }
-    
-    public function t($key, array $params = [], $locale = null, $throwE = false)
-    {
-        return $this->translate($key, $params, $locale, $throwE);
+        $this->loadTranslations($locale);
+        return parent::getTranslation($keys, $locale);
     }
     
     protected function loadTranslations($locale)
     {
         if ($this->loader) {
-            $tr = $this->loader->loadTranslations($locale);
-            if (is_array($tr)) {
-                $this->addTranslations($tr);
+            $translations = $this->loader->loadTranslations($locale);
+            if (is_array($translations)) {
+                $this->addTranslations($translations);
             }
         }
     }

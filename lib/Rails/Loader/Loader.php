@@ -2,8 +2,6 @@
 namespace Rails\Loader;
 
 use Closure;
-use Rails;
-use Rails\Loader\Exception;
 
 class Loader
 {

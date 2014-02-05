@@ -6,6 +6,8 @@ use Rails\ActiveModel\Attributes;
 # TODO: trait for static function services()
 class Base
 {
+    use \Rails\ServiceManager\ServiceLocatorAwareTrait;
+    
     /**
      * Used when invoking magic methods to get/set model attributes.
      * The default convention is to call the camel-cased version of the attribute, for
@@ -95,7 +97,7 @@ class Base
     
     public function __call($methodName, $params)
     {
-        $attrName = self::properAttributeName($prop);
+        $attrName = self::properAttributeName($methodName);
         
         if ($this->getAttributes()->isAttribute($attrName)) {
             return $this->getAttributes()->get($attrName);

@@ -1,0 +1,5 @@
+es:
+  active_record:
+    errors:
+      invalid: (2) Este registro es inválido.
+      length: El valor es muy extenso.

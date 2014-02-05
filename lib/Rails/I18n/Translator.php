@@ -30,15 +30,22 @@ class Translator
     protected $translations   = [];
     
     /**
-     * Default locale for translations, also serves as fallback if a translation
-     * with different locale is requested.
+     * Default locale for translations.
      */
     protected $locale;
     
-    public function __construct($locale = null)
+    /**
+     * Locale to fallback to if a translation is missing.
+     */
+    protected $fallback;
+    
+    public function __construct($locale = null, $fallback = null)
     {
-        if (!$locale) {
+        if ($locale) {
             $this->setLocale($locale);
+        }
+        if ($fallback) {
+            $this->setFallback($fallback);
         }
     }
     
@@ -50,6 +57,26 @@ class Translator
     public function setLocale($locale)
     {
         $this->locale = $locale;
+    }
+    
+    public function locale()
+    {
+        return $this->locale;
+    }
+    
+    public function setFallback($fallback)
+    {
+        $this->fallback = $fallback;
+    }
+    
+    public function fallback()
+    {
+        return $this->fallback;
+    }
+    
+    public function translations()
+    {
+        return $this->translations;
     }
     
     public function addTranslations($translations)
@@ -66,7 +93,7 @@ class Translator
      */
     public function translate($key, array $params = [], $locale = null, $throwE = false)
     {
-        if (!$locale) {
+        if (null === $locale) {
             $locale = $this->locale;
         }
         if (is_string($key)) {
@@ -84,8 +111,8 @@ class Translator
         
         $tr = $this->getTranslation($keys, $locale);
         
-        if (false === $tr && $locale != $this->locale) {
-            $tr = $this->getTranslation($keys, $this->locale);
+        if (false === $tr && $locale != $this->fallback && $this->fallback) {
+            $tr = $this->getTranslation($keys, $this->fallback);
         }
         
         if (false === $tr) {
@@ -139,12 +166,19 @@ class Translator
             if (isset($tr[$key])) {
                 $tr = $tr[$key];
             } else {
-                break;
+                /**
+                 * Translation not found.
+                 */
+                return false;
             }
         }
         
-        if (!is_string($tr)) {
-            $tr = false;
+        if (is_array($tr)) {
+            /**
+             * This may be a translation that got merged with another one, resulting
+             * in an array; get the last value.
+             */
+            $tr = end($tr);
         }
         
         return $tr;

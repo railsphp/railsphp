@@ -132,13 +132,13 @@ class Errors
         }
         
         
-        return $this->services()->get('i18n')->translate();
+        return self::services()->get('i18n')->translate();
     }
     
     protected getI18nKey()
     {
         $className = explode('\\', get_class($this->record));
         $name      = end($className);
-        return $this->services()->get('inflector')->underscore($name);
+        return self::services()->get('inflector')->underscore($name);
     }
 }
