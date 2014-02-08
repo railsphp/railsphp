@@ -1,20 +1,27 @@
 <?php
-namespace I18n;
+namespace RailsTest\I18n;
 
 use Rails;
 
 class LoadingTranslatorTest extends \PHPUnit_Framework_TestCase
 {
+    protected $basePath;
+    
+    public function setUp()
+    {
+        $this->basePath = __DIR__ . '/../..';
+    }
+    
     public function testLoadFiles()
     {
-        $tr = $this->getTranslator([__DIR__ . '/_files/locales/dir1']);
+        $tr = $this->getTranslator([$this->basePath . '/files/locales/dir1']);
         $this->assertSame("This record is invalid.", $tr->t('active_record.errors.invalid'));
         $this->assertSame("This record is invalid.", $tr->t(['active_record', 'errors', 'invalid']));
     }
     
     public function testLocaleSwitch()
     {
-        $tr = $this->getTranslator([__DIR__ . '/_files/locales/dir1']);
+        $tr = $this->getTranslator([$this->basePath . '/files/locales/dir1']);
         # English
         $this->assertSame("This record is invalid.", $tr->t('active_record.errors.invalid'));
         # Change default locale.
@@ -26,7 +33,7 @@ class LoadingTranslatorTest extends \PHPUnit_Framework_TestCase
     
     public function testLoadFilesMultipleDirs()
     {
-        $tr = $this->getTranslator([__DIR__ . '/_files/locales/dir1', __DIR__ . '/_files/locales/dir2']);
+        $tr = $this->getTranslator([$this->basePath . '/files/locales/dir1', $this->basePath . '/files/locales/dir2']);
         # Translation found only in dir2
         $this->assertSame("The value is too long.", $tr->t('active_record.errors.length'));
         # Replaced translation from dir1 by translations in dir2.
@@ -35,8 +42,8 @@ class LoadingTranslatorTest extends \PHPUnit_Framework_TestCase
     
     public function testFallbackLocale()
     {
-        $tr = $this->getTranslator([__DIR__ . '/_files/locales/dir1', __DIR__ . '/_files/locales/dir2']);
-        $tr->setFallback('en');
+        $tr = $this->getTranslator([$this->basePath . '/files/locales/dir1', $this->basePath . '/files/locales/dir2']);
+        $tr->setFallbacks(['en']);
         $this->assertSame("This message is only in english.", $tr->t('active_record.errors.unique', [], 'es'));
         $tr->setLocale('es');
         $this->assertSame("This message is only in english.", $tr->t('active_record.errors.unique'));
@@ -46,8 +53,8 @@ class LoadingTranslatorTest extends \PHPUnit_Framework_TestCase
     {
         $tr = $this->getTranslator();
         # Return key of unknown translations.
-        $this->assertSame("active_record.errors.unknownkey", $tr->t('active_record.errors.unknownkey'));
-        $this->assertSame("active_record.errors.unknownkey", $tr->t(['active_record', 'errors', 'unknownkey']));
+        $this->assertSame(false, $tr->t('active_record.errors.unknownkey'));
+        $this->assertSame(false, $tr->t(['active_record', 'errors', 'unknownkey']));
         # Force throwing an exception.
         $this->setExpectedException("Rails\I18n\Exception\TranslationNotFoundException");
         $tr->t('active_record.errors.unknownkey', [], null, true);

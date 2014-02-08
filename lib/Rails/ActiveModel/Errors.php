@@ -3,33 +3,43 @@ namespace Rails\ActiveModel;
 
 class Errors
 {
-    use Rails\ServiceManager\ServiceLocatorAwareTrait;
+    use \Rails\ServiceManager\ServiceLocatorAwareTrait;
     
     const BASE_ERRORS_INDEX = 'recordBaseErrors';
     
     protected $errors = array();
     
+    /**
+     * @var object
+     */
     protected $model;
+    
+    /**
+     * Cached full messages.
+     */
+    protected $fullMessages = [];
     
     public function __construct($model)
     {
         $this->model = $model;
     }
     
-    public function add($attribute, $msg = null)
+    /**
+     * A translation key can be passed as $message as array, like [ 'invalid' ].
+     * If an string is passed, it's taken as the actual message.
+     */
+    public function add($attribute, $message = [ 'invalid' ])
     {
         if (!isset($this->errors[$attribute])) {
-            $this->errors[$attribute] = array();
+            $this->errors[$attribute] = [];
         }
-        
-        $msg = $this->normalizeMsg($msg);
-        
-        $this->errors[$attribute][] = $msg;
+        $message = $this->normalizeMessage($attribute, $message);
+        $this->errors[$attribute][] = $message;
     }
     
-    public function base($msg)
+    public function base($message)
     {
-        $this->add(self::BASE_ERRORS_INDEX, $msg);
+        $this->add(self::BASE_ERRORS_INDEX, $message);
     }
     
     public function on($attribute)
@@ -48,6 +58,12 @@ class Errors
         return $this->on(self::BASE_ERRORS_INDEX);
     }
     
+    public function clear()
+    {
+        $this->errors       = [];
+        $this->fullMessages = [];
+    }
+    
     /**
      * $glue is a string that, if present, will be used to
      * return the messages imploded.
@@ -57,11 +73,11 @@ class Errors
         $fullMessages = array();
         
         foreach ($this->errors as $attr => $errors) {
-            foreach ($errors as $msg) {
-                if ($attr == self::BASE_ERRORS_INDEX) {
-                    $fullMessages[] = $msg;
-                } else {
-                    $fullMessages[] = $this->properAttrName($attr) . ' ' . $msg;
+            if ($attr == self::BASE_ERRORS_INDEX) {
+                $fullMessages = array_merge($fullMessages, $errors);
+            } else {
+                foreach ($errors as $message) {
+                    $fullMessages[] = $this->fullMessage($attr, $message);
                 }
             }
         }
@@ -71,6 +87,27 @@ class Errors
         } else {
             return $fullMessages;
         }
+    }
+    
+    public function fullMessage($attribute, $message)
+    {
+        if (!isset($this->fullMessages[$attribute][$message])) {
+            if (!isset($this->fullMessages[$attribute])) {
+                $this->fullMessages[$attribute] = [];
+            }
+            
+            $infl     = self::services()->get('inflector');
+            $attrName = $infl->humanize($attribute);
+            
+            $fullMessage = self::services()->get('i18n')->translate('errors.format', [
+                'default'   => '%{attribute} %{message}',
+                'attribute' => $attrName,
+                'message'   => $message
+            ]);
+            
+            $this->fullMessages[$attribute][$message] = $fullMessage;
+        }
+        return $this->fullMessages[$attribute][$message];
     }
     
     public function invalid($attribute)
@@ -111,33 +148,67 @@ class Errors
         return $attr;
     }
     
-    /**
-     * $msg could be an array like this:
-     * [ 'invalid', 'placeholder1' => 'value1', 'placeholder2' => 'value2', ... ]
-     */
-    protected normalizeMsg($msg, $attribute, $type = 'invalid')
+    protected function generateMessage($attribute, $type, array $options = [])
     {
-        if (!is_array($msg)) {
-            return $msg;
+        if ($attribute == self::BASE_ERRORS_INDEX) {
+            $properAttr = 'base';
+        } else {
+            $properAttr = $attribute;
         }
-        if (!method_exists($this->record, 'i18nScope')) {
+        
+        if (method_exists($this->model, 'i18nScope')) {
             $i18nKey = $this->getI18nKey();
             
             $defaults = [
-                $this->i18nScope() . '.errors.models.' . $i18nKey . '.attributes.' . $attribute . '.' . $type,
-                $this->i18nScope() . '.errors.models.' . $i18nKey . $type
+                $this->model->i18nScope() . '.errors.models.' . $i18nKey . '.attributes.' . $properAttr . '.' . $type,
+                $this->model->i18nScope() . '.errors.models.' . $i18nKey . '.' . $type
             ];
         } else {
             $defaults = [];
         }
         
+        $defaults = array_merge($defaults, [
+            'errors.attributes.' . $properAttr . '.' . $type,
+            'errors.messages.'   . $type
+        ]);
         
-        return self::services()->get('i18n')->translate();
+        $key   = array_shift($defaults);
+        $value = $attribute != self::BASE_ERRORS_INDEX ? $this->model->getAttribute($attribute) : null;
+        
+        $infl = self::services()->get('inflector');
+        
+        $options = [
+            'default'   => $defaults,
+            'model'     => $infl->humanize($infl->underscore(get_class($this->model))),
+            'attribute' => $infl->humanize($properAttr),
+            'value'     => $value,
+            'exception' => true
+        ];
+        
+        $message = self::services()->get('i18n')->translate($key, $options);
+        return $message;
     }
     
-    protected getI18nKey()
+    protected function normalizeMessage($attribute, $message, $options = [])
     {
-        $className = explode('\\', get_class($this->record));
+        if (!$message) {
+            $message = ['invalid'];
+        }
+        
+        switch (true) {
+            case is_callable($message):
+                return $message();
+                
+            case is_array($message):
+                return $this->generateMessage($attribute, array_shift($message), $options);
+        }
+        
+        return $message;
+    }
+    
+    protected function getI18nKey()
+    {
+        $className = explode('\\', get_class($this->model));
         $name      = end($className);
         return self::services()->get('inflector')->underscore($name);
     }

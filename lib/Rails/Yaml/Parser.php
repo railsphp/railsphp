@@ -2,6 +2,7 @@
 namespace Rails\Yaml;
 
 use Symfony\Component\Yaml\Yaml as SfYaml;
+use Symfony\Component\Yaml\Exception\ExceptionInterface as SfYamlException;
 
 /**
  * Parses a YAML file. Uses LibYAML library if present,
@@ -28,18 +29,17 @@ class Parser
     
     public function read()
     {
-        try {
-            if (function_exists('yaml_parse')) {
-                return yaml_parse_file($this->filepath);
-            } else {
-                return SfYaml::parse($this->filepath);
+        if (function_exists('yaml_parse')) {
+            $parsed = yaml_parse_file($this->filepath);
+            if (false === $parsed) {
+                throw new Exception\RuntimeException(
+                    sprintf("Couldn't parse file %s", $this->filepath)
+                );
             }
-        } catch (\Exception $e) {
-            $msg  = sprintf("Error while reading YAML file %s:\n", $this->filepath);
-            $msg .= $e->getMessage();
-            $cn   = get_class($e);
-            throw new $cn($msg);
+        } else {
+            $parsed = SfYaml::parse($this->filepath);
         }
+        return $parsed;
     }
     
     public function write($contents, array $params = [])

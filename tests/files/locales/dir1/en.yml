@@ -1,0 +1,17 @@
+en:
+  errors:
+    messages:
+      invalid_email: The email is invalid.
+  activemodel:
+    errors:
+      models:
+        null_active_model:
+          invalid_image_type: The image type is invalid.
+          invalid: is invalid
+          empty: is empty
+          attributes:
+            last_name:
+              invalid: is needed for your profile!
+  activerecord:
+    errors:
+      invalid: This record is invalid.

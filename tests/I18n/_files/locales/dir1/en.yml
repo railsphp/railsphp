@@ -1,4 +1,0 @@
-en:
-  active_record:
-    errors:
-      invalid: This record is invalid.
