@@ -58,7 +58,7 @@ class Translator
     /**
      * Sets default locale for translations.
      *
-     * @var string $locale
+     * @param string $locale
      */
     public function setLocale($locale)
     {
