@@ -1,7 +1,7 @@
 <?php
-namespace Rails\Routing;
+namespace Rails\Routing\Route;
 
-use Rails\Routing\Route\Exception;
+use Rails\Routing\PathToken;
 
 class Route
 {
@@ -41,13 +41,35 @@ class Route
     
     protected $vars = [];
     
-    protected $varNames = [];
-    
     protected $requirements = [];
     
     /**
-     // * format => true is added automatically if
-     // * format is missing.
+     * Valid options:
+     *
+     * alias => string
+     *  A name for this route.
+     *
+     * verbs => array
+     *  HTTP verbs that work with this route.
+     *
+     * format => boolean|string
+     *  If format is null or missing, the route var "format" is optional in the URL.
+     *  If false, the var "format" isn't generated.
+     *  If true or string, format is required and must pass constraint validation.
+     *  If a string, it's taken as a constraint:
+     *    If starting with '/' is taken as a regexp.
+     *    Otherwise, it's taken as a literal constraint.
+     * So passing a string as value is the same as passing 'format' => $str to the
+     * 'constraints' option.
+     *
+     * constraints => array
+     *  Holds constraints "validations" for route vars. For example, passing 'id' => '/\d+/'
+     *  to a route like '/post/:id' will allow only numbers as id. Passing a string
+     *  that does not start with '/' is taken as a literal constraint.
+     *
+     * defaults => array
+     *  Set default values to route vars if they missing. Would work only with
+     *  optional vars.
      */
     protected $options = [];
     
@@ -57,22 +79,25 @@ class Route
     protected $segmentKeys;
     
     /**
+     * Flag to avoid "building" the route more than once.
+     *
+     * @see build()
+     */
+    protected $isBuilt = false;
+    
+    /**
      * Avoiding __construct because of __set_state().
      * So create a route object, then call initialize() passing the params.
      */
     public function initialize(
-        $path, $to,          /*$alias, */array $options = [], array $scope = []
-        // array $verbs,       /*array $namespaces,*/
-        // , array $constraints
-        // , array $defaults
+        $path, $to,
+        array $options = [], array $scope = []
     ) {
         
         $this->path = $path;
-        $this->to = $to;
+        $this->to   = $to;
         $this->options = $options;
         $this->scope = $scope;
-        // $this->constraints = $constraints;
-        // $this->namespaces = $namespaces;
     }
     
     public function path()
@@ -85,21 +110,48 @@ class Route
         return $this->pathRegex;
     }
     
+    public function alias()
+    {
+        return $this->options['alias'];
+    }
+    
+    public function verbs()
+    {
+        return $this->options['verbs'];
+    }
+    
+    public function vars()
+    {
+        return $this->vars;
+    }
+    
+    public function defaults()
+    {
+        return $this->defaults;
+    }
+    
     public function build()
     {
-        $this->normalizePath();
-        $this->extractVars();
-        $this->normalizeOptions();
-        $this->normalizeDefaults();
-        $this->normalizeRequirements();
-        $this->generatePathRegex();
+        if (!$this->isBuilt) {
+            $this->normalizeOptions();
+            $this->normalizePath();
+            $this->extractVars();
+            $this->normalizeDefaults();
+            $this->normalizeRequirements();
+            $this->generatePathRegex();
+            $this->isBuilt = true;
+        }
+    }
+    
+    public function optionalFormat()
+    {
+        return (!isset($this->options['format']) || $this->options['format']) &&
+               is_bool(strpos($this->path, ':format')) &&
+               substr($this->path, -1) != '/';
     }
     
     protected function generatePathRegex()
     {
-        // vd($this->path);
-        // $pathRegex = $this->path;
-        // $pathRegex = preg_quote($this->path, '/');
         $pathRegex = str_replace(array(
             '(',
             ')',
@@ -112,9 +164,8 @@ class Route
             '\/'
         ), $this->path);
         
-        // vd($pathRegex);
         $repls = $subjs = array();
-        // vpe($this->requirements);
+        
         foreach ($this->vars as $name => $var) {
             if ($var['constraint']) {
                 if ($this->isRegexp($var['constraint'])) {
@@ -123,20 +174,8 @@ class Route
                     $repl = '(' . preg_quote($var['constraint']) . ')';
                 }
             } else {
-            
-            // if ($var['constraint']) {
-                // vpe($var);
-            // }
-                if ($name == 'format')
-                    $repl = '([a-zA-Z0-9]{1,5})';
-                elseif ($var['type'] == '*') {
+                if ($var['type'] == '*') {
                     $repl = '(.*?)';
-                // elseif ($var['constraint']) {
-                    // if (substr($var['constraint'], 0, 1) == '/') {
-                        // $repl = $var['constraint'];
-                    // } else {
-                        // $repl = '(' . $var['constraint'] . ')';
-                    // }
                 } else {
                     $repl = '([^\/\.]+?)';
                 }
@@ -147,22 +186,48 @@ class Route
         }
         
         $pathRegex = preg_replace($subjs, $repls, $pathRegex);
-        // $this->pathRegex = '/' . preg_quote($pathRegex, '/') . '/';
-        // vde($pathRegex, $subjs, $repls);
         $this->pathRegex = '/\A' . $pathRegex . '\Z/';
     }
     
     protected function normalizeOptions()
     {
-        // if (!isset($this->options['format'])) {
-            // $this->options['format'] = true;
-        // }
+        if (!isset($this->options['verbs'])) {
+            throw new Exception\InvalidArgumentException(
+                "Array option 'verbs' must be present"
+            );
+        } elseif (!is_array($this->options['verbs'])) {
+            throw new Exception\InvalidArgumentException(
+                sprintf(
+                    "Verbs option must be an array, %s passed",
+                    gettype($this->options['verbs'])
+                )
+            );
+        }
         
-        $pathWithoutFormat = str_replace('/\(\.:format\)$/', '', $this->path);
+        if (!isset($this->options['alias'])) {
+            $this->options['alias'] = null;
+        } elseif (!is_string($this->options['alias'])) {
+            throw new Exception\InvalidArgumentException(
+                sprintf(
+                    "Alias option must be string, %s passed",
+                    gettype($this->options['alias'])
+                )
+            );
+        } elseif (!preg_match('/\A\w+\Z/', $this->options['alias'])) {
+            throw new Exception\InvalidArgumentException(
+                "Alias option must be of format \\w+"
+            );
+        }
+        
+        if (!isset($this->options['format'])) {
+            $this->options['format'] = null;
+        }
+        
+        $pathWithoutFormat = preg_replace('/\(\.:format\)$/', '', $this->path);
         
         if (
             preg_match(self::WILDCARD_PATH, $pathWithoutFormat, $m) &&
-            (!isset($this->options['format']) || $this->options['format'])
+            $this->options['format'] === true
         ) {
             if (!isset($options[$m[1]])) {
                 $this->options[$m[1]] = '/.+?/';
@@ -170,7 +235,7 @@ class Route
         }
         
         if (is_int(strpos($pathWithoutFormat, ':controller'))) {
-            if (!empty($scope['module'])) {
+            if (!empty($this->scope['namespace'])) {
                 throw new Exception\InvalidArgumentError(
                     ":controller segment is not allowed within a namespace block"
                 );
@@ -196,7 +261,7 @@ class Route
             $this->path = '/' . $this->path;
         }
         
-        if (!empty($options['format'])) {
+        if ($this->options['format']) {
             $this->path .= '.:format';
         } elseif ($this->optionalFormat()) {
             $this->path .= '(.:format)';
@@ -229,7 +294,7 @@ class Route
             }
         }
         
-        if (isset($this->options['format'])) {
+        if (is_string($this->options['format'])) {
             if ($this->isRegexp($this->options['format'])) {
                 $defaults['format'] = null;
             } else {
@@ -258,15 +323,17 @@ class Route
             $requirements[$key] = $requirement;
         }
         
-        if (isset($this->options['format'])) {
-            if ($this->options['format']) {
+        if ($this->options['format']) {
+            if ($this->options['format'] === true) {
                 if (empty($requirements['format'])) {
-                    $requirements['format'] = '/.+';
+                    $requirements['format'] = '/.+/';
                 }
-            } elseif ($this->isRegexp($this->options['format'])) {
-                $requirements['format'] = $this->options['format'];
-            } else {
-                $requirements['format'] = '/' . preg_quote($this->options['format']) . '/';
+            } elseif (is_string($this->options['format'])) {
+                if ($this->isRegexp($this->options['format'])) {
+                    $requirements['format'] = $this->options['format'];
+                } else {
+                    $requirements['format'] = '/' . preg_quote($this->options['format']) . '/';
+                }
             }
         }
         
@@ -297,7 +364,7 @@ class Route
                  * Only add those option values that are regexp, i.e.
                  * that start with an slash.
                  */
-                if (is_scalar($option) && strpos((string)$option, 0, 1) == '/') {
+                if (!is_bool($option) && is_scalar($option) && strpos((string)$option, 0, 1) == '/') {
                     $constraints[$key] = $option;
                 }
             }
@@ -325,13 +392,6 @@ class Route
         return $this->segmentKeys;
     }
     
-    protected function optionalFormat()
-    {
-        return (!isset($this->options['format']) || $this->options['format']) &&
-               is_bool(strpos($this->path, ':format')) &&
-               substr($this->path, -1) != '/';
-    }
-    
     protected function defaultControllerAndAction()
     {
         if (is_callable($this->to)) {
@@ -345,13 +405,13 @@ class Route
         }
     }
     
-    private function extractVars($path = null)
+    protected function extractVars($path = null)
     {
         $vars = array();
         if ($path === null) {
             $path = $this->path;
         } else {
-             $vars['part'] = $path;
+            $vars['part'] = $path;
             # Remove parentheses.
             $path = substr($path, 1, -1);
         }
@@ -371,13 +431,10 @@ class Route
                 # Get default from properties.
                 $default = isset($this->defaults[$var_name]) ? $this->defaults[$var_name] : null;
                 
-                $this->varsNames[] = $var_name;
-                
                 $this->vars[$var_name] = array(
                     'type'        => $type,
                     'constraint'  => $constraint,
                     'default'     => $default,
-                    // 'value'       => null,
                     'optional'    => false
                 );
             }
@@ -386,13 +443,14 @@ class Route
             $vars[] = [];
         
         foreach ($parts as $subpart) {
-            if ($c = $this->extractVars($subpart))
+            if ($c = $this->extractVars($subpart)) {
                 $vars[] = $c;
+            }
         }
         return $vars;
     }
 
-    private function extractGroups($str)
+    protected function extractGroups($str)
     {
         $parts = array();
         while ($part = $this->extractGroup($str)) {
@@ -402,10 +460,11 @@ class Route
         return $parts;
     }
     
-    private function extractGroup($str)
+    protected function extractGroup($str)
     {
-        if (false === ($pos = strpos($str, '(')))
+        if (false === ($pos = strpos($str, '('))) {
             return;
+        }
         $group = '';
         $open = 1;
         while ($open > 0) {
