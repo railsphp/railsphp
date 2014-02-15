@@ -30,7 +30,7 @@ class ServiceManager
         if (!isset($this->instances[$name])) {
             if (isset($this->serviceList[$name])) {
                 if ($this->serviceList[$name] instanceof \Closure) {
-                    $this->instance[$name] = $this->serviceList[$name]();
+                    $this->instances[$name] = $this->serviceList[$name]();
                 } else {
                     $this->instances[$name] = new $this->serviceList[$name]['class_name'];
                 }
@@ -41,5 +41,15 @@ class ServiceManager
             }
         }
         return $this->instances[$name];
+    }
+    
+    public function set($name, $value)
+    {
+        if (isset($this->serviceList[$name])) {
+            throw new Exception\RuntimeException(
+                sprintf("Service %s already exists", $name)
+            );
+        }
+        $this->serviceList[$name] = $value;
     }
 }
