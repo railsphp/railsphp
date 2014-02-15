@@ -52,7 +52,18 @@ class Validation
     
     protected function _validate_format()
     {
-        return (bool)preg_match($this->_params['with'], $this->_data);
+        if (is_string($this->_params['with'])) {
+            return (bool)preg_match($this->_params['with'], $this->_data);
+        } elseif (is_callable($this->_params['with'])) {
+            return call_user_func($this->_params['with'], $this->_data);
+        } else {
+            throw new Exception\InvalidArgumentException(
+                sprintf(
+                    "Format 'with' option must be either a string or callback, %s passed",
+                    gettype($this->_params['with'])
+                )
+            );
+        }
     }
     
     protected function _validate_number()
