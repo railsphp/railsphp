@@ -201,12 +201,19 @@ class Template extends Base
         if ($layout_wrap) {
             $layout_file = $this->resolve_layout_file($this->_params['layout']);
             
-            if (!is_file($layout_file))
-                throw new Exception\LayoutMissingException(
-                    sprintf("Missing layout '%s' [ file => %s ]",
-                        $this->_params['layout'], $layout_file)
-                );
-            ob_start();
+            if (!is_file($layout_file)) {
+                if (empty($this->_params['optionalLayout'])) {
+                    throw new Exception\LayoutMissingException(
+                        sprintf("Missing layout '%s' [ file => %s ]",
+                            $this->_params['layout'], $layout_file)
+                    );
+                } else {
+                    $this->_params['layout'] = false;
+                    $layout_wrap = false;
+                }
+            } else {
+                ob_start();
+            }
         }
         
         switch ($this->_type) {
@@ -264,9 +271,9 @@ class Template extends Base
         if (strpos($layout, '/') === 0 || preg_match('/^[A-Za-z]:(?:\\\|\/)/', $layout))
             return $layout;
         else {
-            if (is_int(strpos($layout, '.')))
-                return Rails::config()->paths->layouts . '/' . $layout;
-            else
+            // if (is_int(strpos($layout, '.')))
+                // return Rails::config()->paths->layouts . '/' . $layout;
+            // else
                 return Rails::config()->paths->layouts . '/' . $layout . '.php';
         }
     }

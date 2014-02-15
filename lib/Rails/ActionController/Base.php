@@ -613,9 +613,6 @@ abstract class Base extends ActionController
             case 'template':
                 $respParams = [];
                 
-                $layout = !empty($this->render_params['layout']) ? $this->render_params['layout'] : $this->layout;
-                $respParams['layout'] = $layout;
-                
                 $ext = pathinfo($main_param, PATHINFO_EXTENSION);
                 
                 if (!$ext) {
@@ -647,6 +644,13 @@ abstract class Base extends ActionController
                     
                     $template_name = $pinfo['dirname'] . '/' . $pinfo['filename'];
                 }
+                
+                $layout = !empty($this->render_params['layout']) ? $this->render_params['layout'] : $this->layout;
+                if ($format != 'html') {
+                    $layout .= '.' . $format;
+                    $respParams['optionalLayout'] = true;
+                }
+                $respParams['layout'] = $layout;
                 
                 $respParams['template_name'] = $template_name;
                 $respParams['extension'] = $ext;

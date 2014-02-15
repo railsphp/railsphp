@@ -22,6 +22,9 @@ class Template extends Base
             $params = [
                 'layout' => $this->_params['layout']
             ];
+            if (!empty($this->_params['optionalLayout'])) {
+                $params['optionalLayout'] = true;
+            }
             
             $this->renderer = new ActionView\Template($this->template_file_name, $params);
             
