@@ -14,26 +14,26 @@ class Headers
     
     private $_content_type;
     
-    // public function status()
-    // {
-        // return $this->status;
-    // }
-    
     public function status($status = null)
     {
         if (null === $status) {
             return $this->status;
         } else {
-            if (ctype_digit((string)$status))
-                $this->status = (int)$status;
-            elseif (is_string($status))
-                $this->status = $status;
-            else
-                throw new Exception\InvalidArgumentException(
-                    sprintf("%s accepts string, %s passed.", __METHOD__, gettype($value))
-                );
-            return $this;
+            return $this->setStatus($status);
         }
+    }
+    
+    public function setStatus($status)
+    {
+        if (ctype_digit((string)$status))
+            $this->status = (int)$status;
+        elseif (is_string($status))
+            $this->status = $status;
+        else
+            throw new Exception\InvalidArgumentException(
+                sprintf("%s accepts string, %s passed.", __METHOD__, gettype($value))
+            );
+        return $this;
     }
     
     public function location($url, $status = 302)
