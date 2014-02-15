@@ -12,6 +12,7 @@ class Dumper extends Base
         $tableStmts = [];
         $sql = "SHOW TABLES";
         $tables = $this->connection->select($sql);
+        $autoIncrementRegex = '/\s?AUTO_INCREMENT=\d+/';
         
         foreach ($tables as $table) {
             $table = array_shift($table);
@@ -23,6 +24,9 @@ class Dumper extends Base
             if ($constraints = $this->extractConstraints($stmt)) {
                 $this->constraints[$table] = $constraints;
             }
+            
+            # Remove Auto increment attribute.
+            $stmt = preg_replace($autoIncrementRegex, '', $stmt);
             
             # Add trailing semicolon to table statements.
             $tableStmts[] = $stmt . ';';
@@ -93,6 +97,11 @@ class Dumper extends Base
                 $delimiter = '';
             } else {
                 $query[] = $line;
+                
+                if (substr($line, -1) == ';') {
+                    $queries[] = implode("\n", $query);
+                    $query = [];
+                }
             }
         }
         
