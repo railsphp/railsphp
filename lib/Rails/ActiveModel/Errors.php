@@ -29,8 +29,8 @@ class Errors
     {
         if (!isset($this->errors[$attribute]))
             return null;
-        elseif (count($this->errors[$attribute]) == 1)
-            return current($this->errors[$attribute]);
+        // elseif (count($this->errors[$attribute]) == 1)
+            // return current($this->errors[$attribute]);
         else
             return $this->errors[$attribute];
     }
