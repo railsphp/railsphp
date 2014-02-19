@@ -124,7 +124,7 @@ abstract class Base
         }
         
         if (!$this->templateName)
-            $this->templateName = $this->calledMethod;
+            $this->templateName = Rails::services()->get('inflector')->underscore($this->calledMethod);
         
         if (!$this->templatePath)
             $this->templatePath = Rails::services()->get('inflector')->underscore(get_called_class());
