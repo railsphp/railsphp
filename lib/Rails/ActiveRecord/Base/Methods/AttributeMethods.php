@@ -151,11 +151,7 @@ trait AttributeMethods
             );
         }
         
-        if ($this->isNewRecord) {
-            $this->setChangedAttribute($name, $value);
-        } elseif ((string)$this->getAttribute($name) != (string)$value) {
-            $this->setChangedAttribute($name, $this->$name);
-        }
+        $this->setChangedAttribute($name, $value);
         
         # If setter exists for this attribute, it will have to set the attribute itself.
         if ($setter = $this->setterExists($name)) {
@@ -248,12 +244,19 @@ trait AttributeMethods
      */
     public function attributeWas($attr)
     {
-        return $this->attributeChanged($attr) ? $this->changedAttributes[$attr] : null;
+        return $this->attributeChanged($attr) ?
+                $this->changedAttributes[$attr] :
+                $this->getAttribute($attr);
     }
     
     public function changedAttributes()
     {
         return $this->changedAttributes;
+    }
+    
+    public function clearChangedAttributes()
+    {
+        $this->changedAttributes = [];
     }
     
     /**
@@ -282,9 +285,29 @@ trait AttributeMethods
         return null;
     }
     
-    protected function setChangedAttribute($attr, $oldValue)
+    /**
+     * Store changed attribute value.
+     * $attributes array starts empty. When registering an attribute's $newValue,
+     * if the attribute isn't found in the $attributes array (which means it doesn't
+     * have any value yet), nothing happens; the $newValue will be considered as the
+     * "initial" value. If a the value of this attribute is changed again, then the
+     * "initial" value will be stored as the original value in $changedAttributes.
+     * Then, if another new value is set, and this value equals to the original value,
+     * it's considered as the attribute hasn't changed, so it's removed from the
+     * changedAttributes array.
+     */
+    protected function setChangedAttribute($attrName, $newValue)
     {
-        $this->changedAttributes[$attr] = $oldValue;
+        if (!$this->attributeChanged($attrName)) {
+            if (array_key_exists($attrName, $this->attributes)) {
+                $oldValue = $this->getAttribute($attrName);
+                if ((string)$newValue != (string)$oldValue) {
+                    $this->changedAttributes[$attrName] = $oldValue;
+                }
+            }
+        } elseif ((string)$newValue == (string)$this->changedAttributes[$attrName]) {
+            unset($this->changedAttributes[$attrName]);
+        }
     }
     
     private function filterProtectedAttributes(&$attributes)
