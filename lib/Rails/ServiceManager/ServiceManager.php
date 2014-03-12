@@ -13,12 +13,8 @@ class ServiceManager
     public function __construct()
     {
         $this->serviceList = [
-            'inflector' => [
-                'class_name' => 'Rails\ActiveSupport\Inflector\Inflector'
-            ],
-            'i18n' => [
-                'class_name' => 'Rails\I18n\I18n'
-            ],
+            'inflector'   => 'Rails\ActiveSupport\Inflector\Inflector',
+            'i18n'        => 'Rails\I18n\I18n',
             'rails.cache' => function() {
                 $cache = new \Rails\Cache\Cache('file');
             }
@@ -31,8 +27,10 @@ class ServiceManager
             if (isset($this->serviceList[$name])) {
                 if ($this->serviceList[$name] instanceof \Closure) {
                     $this->instances[$name] = $this->serviceList[$name]();
+                } elseif (is_string($this->serviceList[$name])) {
+                    $this->instances[$name] = new $this->serviceList[$name];
                 } else {
-                    $this->instances[$name] = new $this->serviceList[$name]['class_name'];
+                    $this->instances[$name] = $this->serviceList[$name];
                 }
             } else {
                 throw new Exception\RuntimeException(
