@@ -254,8 +254,16 @@ abstract class Base
         } else {
             self::$skipDefaultAttributes = true;
         }
-        
-        $this->assignAttributes($attrs);
+        $this->assignAttributes(
+            array_merge(
+                array_fill_keys(
+                    static::table()->columnNames(),
+                    null
+                ),
+                static::table()->columnDefaults(),
+                $attrs
+            )
+        );
         if (!self::$preventInit) {
             $this->init();
         } else {
@@ -362,16 +370,17 @@ abstract class Base
     }
     
     /**
-     * Directly passes the new value to the attributes array and then
-     * saves the record.
+     * Update single attribute.
+     * Sets a new value for the attribute and saves the record.
+     * Validations are skipped but callbacks are still ran.
      *
      * @param string $attrName  The name of the attribute.
      * @param mixed $value      The value for the attribute,
      */
     public function updateAttribute($attrName, $value)
     {
-        $this->attributes[$attrName] = $value;
-        return $this->save(['skip_validation' => true, 'skip_callbacks' => true, 'action' => 'update']);
+        $this->setAttribute($attrName, $value);
+        return $this->save(['skip_validation' => true, 'action' => 'update']);
     }
     
     /**
@@ -390,8 +399,10 @@ abstract class Base
         if ($this->isNewRecord()) {
             return $this->_create_do($opts);
         } else {
-            if (!$this->_validate_data('save', $opts))
-                return false;
+            if (!isset($opts['skip_validation']) || empty($opts['skip_validation'])) {
+                if (!$this->_validate_data('save', $opts))
+                    return false;
+            }
             
             return $this->runCallbacks('save', function() {
                 return $this->_save_do();
@@ -484,6 +495,39 @@ abstract class Base
             unset($params['builder']);
             $builder->build($attrs, $params);
         }
+    }
+    
+    public function updateColumn($columnName, $value)
+    {
+        return $this->updateColumns([$columnName => $value]);
+    }
+    
+    public function updateColumns(array $colsValsPairs)
+    {
+        if (!$colsValsPairs) {
+            return null;
+        }
+        
+        $colQuery = [];
+        foreach (array_keys($colsValsPairs) as $colName) {
+            $colQuery[] = '`' . $colName . '` = ?';
+        }
+        
+        $pk  = static::table()->primaryKey();
+        $sql = sprintf(
+                "UPDATE `%s` SET %s WHERE `%s` = ?",
+                static::tableName(),
+                implode(', ', $colQuery),
+                $pk
+               );
+        
+        return static::connection()->executeSql(
+            array_merge(
+                [$sql],
+                array_values($colsValsPairs),
+                [$this->getAttribute($pk)]
+            )
+        );
     }
     
     /**
@@ -683,8 +727,6 @@ abstract class Base
      */
     private function _validate_data($action, array $opts = [])
     {
-        // if (!$this->runCallbacks('before_validation'))
-            // return false;
         return $this->runCallbacks('validation_on_' . $action, function() use ($action) {
             return $this->runCallbacks('validation', function() use ($action) {
                 $validation_success = true;
@@ -731,7 +773,7 @@ abstract class Base
                         if (!empty($validations['on']) && !in_array($action, $validations['on'])) {
                             continue;
                         }
-                        // $this->getAttribute($attrName);
+                        
                         $this->$attrName();
                         if ($this->errors()->any()) {
                             $validation_success = false;
@@ -740,8 +782,6 @@ abstract class Base
                 }
                 return $validation_success;
             });
-            // vde($a);
-            // return $a;
         });
     }
     
@@ -761,12 +801,27 @@ abstract class Base
                 $cols_values = $cols_names = array();
                 
                 foreach ($this->attributes() as $attr => $val) {
+                    if (
+                        $val === null && 
+                        !$this->attributeChanged($attr) &&
+                        !array_key_exists($attr, static::table()->columnDefaults())
+                    ) {
+                        /**
+                         * This attribute's value (null) has been set automatically
+                         * when the model was constructed, and it doesn't have a default
+                         * value (i.e. it's not null). Skip it.
+                         */
+                        continue;
+                    }
+                    
                     $proper = static::properAttrName($attr);
+                    
                     if (!static::table()->columnExists($proper)) {
                         continue;
                     }
-                    $cols_names[] = '`'.$attr.'`';
-                    $cols_values[] = $val;
+                    
+                    $cols_names[]      = '`'.$attr.'`';
+                    $cols_values[]     = $val;
                     $init_attrs[$attr] = $val;
                 }
                 
@@ -811,48 +866,44 @@ abstract class Base
         $w = $wd = $q = $d = array();
         
         $dt = static::table()->columnNames();
+        $indexes = static::table()->indexes() ?: [];
         
-        try {
-            $current = $this->_get_stored_data();
-        } catch (Exception\ExceptionInterface $e) {
-            $this->errors()->addToBase($e->getMessage());
-            return;
-        }
-        
-        $has_primary_keys = false;
-        
-        foreach (static::table()->indexes() as $idx) {
-            $w[] = '`'.$idx.'` = ?';
-            $wd[] = $current->$idx;
-        }
-        
-        if ($w) {
-            $has_primary_keys = true;
-        }
-        
-        // $this->_merge_model_attributes();
-        
-        foreach ($this->attributes() as $prop => $val) {
+        foreach (array_keys($this->changedAttributes()) as $attrName) {
             # Can't update properties that don't have a column in DB, or
             # PRImary keys, or time columns.
-            if (!in_array($prop, $dt) || $prop == 'created_at' || $prop == 'updated_at' ||
-                $prop == 'created_on' || $prop == 'updated_on'
+            if (!in_array($attrName, $dt) || $attrName == 'created_at' || $attrName == 'updated_at' ||
+                $attrName == 'created_on' || $attrName == 'updated_on' || in_array($attrName, $indexes)
             ) {
                 continue;
-            } elseif (!$has_primary_keys) {
-                $w[]  = '`'.$prop.'` = ?';
-                $wd[] = $current->$prop;
-                // foreach ($current->attributes() as $
+            } else {
+                $q[] = '`'.$attrName.'` = ?';
+                $d[] = $this->getAttribute($attrName);
             }
-            // } elseif (!$has_primary_keys && $val === $current->$prop) {
-                // $w[] = '`'.$prop.'` = ?';
-                // $wd[] = $current->$prop;
+        }
+        
+        if (!$q) {
+            # Nothing to update
+            return true;
+        }
+        
+        if ($indexes) {
+            foreach ($indexes as $idx) {
+                $w[] = '`'.$idx.'` = ?';
+                if ($this->attributeChanged($idx)) {
+                    $wd[] = $this->attributeWas($idx);
+                } else {
+                    $wd[] = $this->getAttribute($idx);
+                }
+            }
+        } else {
+            foreach ($this->attributes() as $attrName => $value) {
+                $w[] = '`'.$attrName.'` = ?';
                 
-            // } else
-            if ($val != $current->$prop) {
-                $this->setChangedAttribute($prop, $current->$prop);
-                $q[] = '`'.$prop.'` = ?';
-                $d[] = $val;
+                if ($this->attributeChanged($attrName)) {
+                    $wd[] = $this->attributeWas($attrName);
+                } elseif (($value = $this->getAttribute($attrName)) !== null) {
+                    $wd[] = $value;
+                }
             }
         }
         
@@ -889,10 +940,6 @@ abstract class Base
     
     private function _delete_from_db($type)
     {
-        // if (!$this->runCallbacks('before_'.$type)) {
-            // return false;
-        // }
-        
         $w = $wd = [];
         
         if ($keys = self::table()->indexes()) {
@@ -918,8 +965,6 @@ abstract class Base
         
         static::connection()->executeSql($wd);
         
-        // $this->runCallbacks('after_'.$type);
-        
         return true;
     }
     
@@ -941,7 +986,7 @@ abstract class Base
         
         $type = static::table()->columnType($column);
         
-        if ($type == 'datetime')
+        if ($type == 'datetime' || $type == 'timestamp')
             $time = date('Y-m-d H:i:s');
         elseif ($type == 'year')
             $time = date('Y');
@@ -949,8 +994,6 @@ abstract class Base
             $time = date('Y-m-d');
         elseif ($type == 'time')
             $time = date('H:i:s');
-        elseif ($type == 'timestamp')
-            $time = time();
         else
             return false;
         
