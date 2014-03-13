@@ -646,10 +646,11 @@ abstract class Base extends ActionController
                 }
                 
                 $layout = !empty($this->render_params['layout']) ? $this->render_params['layout'] : $this->layout;
-                if ($format != 'html') {
+                if ($format && $format != 'html') {
                     $layout .= '.' . $format;
                     $respParams['optionalLayout'] = true;
                 }
+                
                 $respParams['layout'] = $layout;
                 
                 $respParams['template_name'] = $template_name;
