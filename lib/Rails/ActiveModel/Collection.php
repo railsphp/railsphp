@@ -294,7 +294,7 @@ class Collection implements \ArrayAccess, \Iterator
                 // if (Rails::config()->ar2) {
                     // $models_attrs[] = $m->$attrs();
                 // } else {
-                    $models_attrs[] = $m->$attrs;
+                    $models_attrs[] = $m->getAttribute($attrs);
                 // }
             }
         } else {
@@ -302,7 +302,7 @@ class Collection implements \ArrayAccess, \Iterator
                 $model_attrs = [];
                 foreach ($attrs as $attr) {
                     // if (!Rails::config()->ar2) {
-                        $model_attrs[$attr] = $m->$attr;
+                        $model_attrs[$attr] = $m->getAttribute($attrs);
                     // } else {
                         // $model_attrs[$attr] = $m->$attr();
                     // }
