@@ -33,7 +33,7 @@ trait CounterMethods
     
     public function increment($attribute, $by = 1)
     {
-        return $this->incrementAttr($attribute, $by)->updateAttribute($attribute, $this->$attribute);
+        return $this->incrementAttr($attribute, $by)->updateColumn($attribute, $this->$attribute);
     }
     
     public function decrementAttr($attribute, $by = 1)
@@ -45,6 +45,6 @@ trait CounterMethods
     
     public function decrement($attribute, $by = 1)
     {
-        return $this->decrementAttr($attribute, $by)->updateAttribute($attribute, $this->$attribute);
+        return $this->decrementAttr($attribute, $by)->updateColumn($attribute, $this->$attribute);
     }
 }
