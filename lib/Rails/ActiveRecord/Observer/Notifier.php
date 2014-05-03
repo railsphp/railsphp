@@ -44,8 +44,6 @@ class Notifier
         $callbacks = [];
         
         if ($observers = Rails::config()->active_record->observers->toArray()) {
-            $observerMethodRegex = '/^(before|after)/';
-            
             foreach ($observers as $observerClass) {
                 $callbacks[$observerClass] = [];
                 
@@ -56,7 +54,8 @@ class Notifier
                         if (
                             $method->isPublic() &&
                             !$method->isStatic() &&
-                            preg_match($observerMethodRegex, $method->name)
+                            (0 === strpos($method->name, 'before')
+                             || 0 === strpos($method->name, 'after'))
                         ) {
                             $callbacks[$observerClass][] = $method->name;
                         }
