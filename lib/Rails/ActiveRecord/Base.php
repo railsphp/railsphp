@@ -648,7 +648,7 @@ abstract class Base
         }
         
         if ($callbacks = $this->getCallbacks($callbackName, 'after')) {
-            foreach (array_reverse($callbacks) as $method) {
+            foreach ($callbacks as $method) {
                 if (false === $this->$method()) {
                     break;
                 }
