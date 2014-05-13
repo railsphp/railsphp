@@ -236,7 +236,7 @@ abstract class Base
         return $coll;
     }
     
-    static private function getReflection($class = null)
+    static public function getReflection($class = null)
     {
         if (!$class) {
             $class = get_called_class();
