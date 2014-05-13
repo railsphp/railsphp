@@ -248,12 +248,12 @@ class Parameters implements \IteratorAggregate
     
     private function _import_files()
     {
+        $this->files = new \stdClass();
+        
         if (empty($_FILES)) {
             return;
         }
         
-        $this->files = new \stdClass();
-    
         foreach ($_FILES as $mainName => $data) {
             if (!is_array($data['name'])) {
                 if ($data['error'] != UPLOAD_ERR_NO_FILE) {
