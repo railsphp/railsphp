@@ -291,21 +291,13 @@ class Collection implements \ArrayAccess, \Iterator
         
         if (is_string($attrs)) {
             foreach ($this as $m) {
-                // if (Rails::config()->ar2) {
-                    // $models_attrs[] = $m->$attrs();
-                // } else {
-                    $models_attrs[] = $m->getAttribute($attrs);
-                // }
+                $models_attrs[] = $m->getAttribute($attrs);
             }
         } else {
             foreach ($this->members() as $m) {
                 $model_attrs = [];
                 foreach ($attrs as $attr) {
-                    // if (!Rails::config()->ar2) {
-                        $model_attrs[$attr] = $m->getAttribute($attrs);
-                    // } else {
-                        // $model_attrs[$attr] = $m->$attr();
-                    // }
+                    $model_attrs[$attr] = $m->getAttribute($attr);
                 }   
                 $models_attrs[] = $model_attrs;
             }
