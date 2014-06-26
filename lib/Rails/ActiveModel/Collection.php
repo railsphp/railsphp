@@ -201,27 +201,53 @@ class Collection implements \ArrayAccess, \Iterator
         return $this;
     }
     
+    /**
+     * Get the model with the max value according to `$criteria`.
+     * If `$criteria` is a string, it's assumed it's the name of either an
+     * attribute or a property of the model, and the comparison is a simple
+     * `return $a > $b ? $a : $b`. If this isn't enough, a Closure may be
+     * passed as `$criteria`, which will receive 2 models as arguments and one
+     * of them must be returned.
+     *
+     * @param string|Closure $criteria
+     * @return object
+     */
     public function max($criteria)
     {
-        if (!$this->members)
+        if (!$this->members) {
             return false;
-        
-        $current = key($this->members);
-        if (count($this->members) < 2)
-            return $this->members[$current];
-        
-        $max = $this->members[$current];
-        
-        if ($criteria instanceof Closure) {
-            $params = $this;
-            foreach($params as $current) {
-                if (!$next = next($params))
-                    break;
-                $max = $criteria($max, $next);
-            }
-        } else {
-            
         }
+        
+        if (count($this->members) < 2) {
+            return current($this->members);
+        }
+        
+        if (is_string($criteria)) {
+            $propName = $criteria;
+            $criteria = function ($a, $b) use ($propName) {
+                if ($a->getProperty($propName) > $b->getProperty($propName)) {
+                    return $a;
+                } else {
+                    return $b;
+                }
+            };
+        } elseif (!$criteria instanceof Closure) {
+            throw new Exception\InvalidArgumentException(sprintf(
+                "Argument 1 must be either string or Closure, %s passed",
+                gettype($criteria)
+            ));
+        }
+        
+        $members = $this->members;
+        reset($members);
+        
+        foreach ($members as $current) {
+            if (!$next = next($members)) {
+                break;
+            }
+            $max = $criteria($current, $next);
+        }
+        
         return $max;
     }
     
