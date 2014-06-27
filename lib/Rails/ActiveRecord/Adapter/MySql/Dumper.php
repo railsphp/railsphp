@@ -106,7 +106,10 @@ class Dumper extends Base
         }
         
         foreach ($queries as $query) {
-            $this->connection->executeSql($query);
+            # There may be empty lines added as queries, it is safe to skip them.
+            if ($query) {
+                $this->connection->executeSql($query);
+            }
         }
     }
     
