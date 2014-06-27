@@ -238,15 +238,12 @@ class Collection implements \ArrayAccess, \Iterator
             ));
         }
         
-        $members = $this->members;
-        reset($members);
+        $members = array_values($this->members);
+        $max     = array_shift($members);
         
-        foreach ($members as $current) {
-            if (!$next = next($members)) {
-                break;
-            }
-            $max = $criteria($current, $next);
-        }
+        array_walk($members, function($member) use (&$max, $criteria) {
+            $max = $criteria($max, $member);
+        });
         
         return $max;
     }
