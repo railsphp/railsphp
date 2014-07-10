@@ -31,7 +31,7 @@ class Path
     public function basePaths(array $basePaths = null)
     {
         if (null === $basePaths) {
-            return $this->baePaths;
+            return $this->basePaths;
         } else {
             $this->basePaths = $basePaths;
         }
