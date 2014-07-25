@@ -12,8 +12,8 @@
         "toopay/assetic-minifier": "1.0.0"
     },
     "autoload": {
-        "psr-0": {
-            "Rails\\": "lib/"
+        "psr-4": {
+            "Rails\\": "lib/Rails"
         }
     }
 }
