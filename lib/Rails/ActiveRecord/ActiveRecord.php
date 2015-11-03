@@ -30,6 +30,15 @@ abstract class ActiveRecord
      */
     static private $_last_error;
     
+    /**
+     * Keep the default connection name (usually the environment's name)
+     * here until it's really needed, to avoid connecting to the
+     * database unnecessarily.
+     *
+     * @var string
+     */
+    protected static $defaultConnectionName;
+    
     static public function setLastError(array $error, $connection_name = null)
     {
         self::$_last_error = $error;
@@ -76,10 +85,11 @@ abstract class ActiveRecord
     
     static public function set_environment_connection($environment)
     {
-        if (self::connectionExists($environment))
-            self::setConnection($environment);
-        elseif (self::connectionExists('default'))
-            self::setConnection('default');
+        if (self::connectionExists($environment)) {
+            self::$defaultConnectionName = $environment;
+        } elseif (self::connectionExists('default')) {
+            self::$defaultConnectionName = 'default';
+        }
     }
     
     /**
@@ -92,8 +102,16 @@ abstract class ActiveRecord
     {
         if ($name === null) {
             $name = self::$activeConnectionName;
-            if (!$name)
-                throw new Exception\RuntimeException("No database connection is active");
+            
+            if (!$name) {
+                if (self::$defaultConnectionName) {
+                    $name = self::$defaultConnectionName;
+                    self::setConnection($name);
+                    self::$defaultConnectionName = null;
+                } else {
+                    throw new Exception\RuntimeException("No database connection is active");
+                }
+            }
         } else {
             self::create_connection($name);
         }
