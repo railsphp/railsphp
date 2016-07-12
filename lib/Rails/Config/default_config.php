@@ -29,7 +29,7 @@ $config->base_path = ''; // must NOT include leading nor trailing slash.
  * will be relative to Rails::root().
  */
 $config->load_files = [];
-    
+
 $config->rails_panel_path = false; // NO leading nor trailing slashes, e.g. "sysadmin", "foo/bar/sysadmin"
 
 $config->safe_ips = [
@@ -87,7 +87,7 @@ $config->action_mailer = [
      * implementing Zend\Mail\Transport\TransportInterface
      */
     'delivery_method' => 'sendmail',
-    
+
     'smtp_settings'   => [
         'address'        => '',
         'port'           => 25,
@@ -97,7 +97,7 @@ $config->action_mailer = [
         'authentication' => 'login',
         'enable_starttls_auto' => true // Requires openssl PHP extension.
     ],
-    
+
     'file_settings'   => [
         /**
          * Directory where mails will be stored.
@@ -108,7 +108,7 @@ $config->action_mailer = [
          * Defaults to Rails::root() . /tmp/mail.
          */
         'location'       => null,
-        
+
         /**
          * Any callable argument.
          *
@@ -116,7 +116,7 @@ $config->action_mailer = [
          */
         'name_generator' => null
     ],
-    
+
     'default_options' => [],
 ];
 
@@ -128,19 +128,19 @@ $config->serve_static_assets = false;
 
 $config->assets = [
     'enabled' => true,
-    
+
     /**
      * In development, files included by manifests are served individually to help debug javascript.
      * However, including many files can increase the page load times a lot.
      * With this option, manifest files and their children are concatenated, resulting in 1 file.
      */
     'concat' => false,
-    
+
     /**
      * Additional [absolute] paths to search assets in.
      */
     'paths' => [],
-    
+
     /**
      * Defines how an extension is handled.
      * Pass either an array or a Closure.
@@ -162,24 +162,24 @@ $config->assets = [
             'static'     => false
         ]
     ],
-    
+
     'js_extensions' => [
         // CoffeeScript
     ],
-    
+
     /**
      * This is Not zip compression.
      * This tells Assets to minify files upon compile using the compressors
      * defined below.
      */
     'compress' => true,
-    
+
     /**
      * Compressors.
      * Accepts an array like the one for extensions.
      */
     'css_compressor' => [
-        'class_name' => 'Minifier\Cssmin',
+        'class_name' => 'Minifier\CSSMin',
         'method'     => 'run'
     ],
     'js_compressor' => [
@@ -187,15 +187,15 @@ $config->assets = [
         'method'     => 'minify',
         'static'     => true
     ],
-    
+
     /**
      * Create a gzipped version of compiled files.
      * Uses gzencode()
      */
     'gz_compression' => true,
-    
+
     'gz_compression_level' => 9,
-    
+
     /**
      * Names of the manifest files that will be compiled upon
      * Assets::compileAll(). Only names, no paths.
@@ -204,7 +204,7 @@ $config->assets = [
         'application.js',
         'application.css'
     ],
-    
+
     /**
      * Non js or css files that will be copied to the public assets folder
      * when compiling. These values will be passed to glob() with GLOB_BRACE.
@@ -215,23 +215,23 @@ $config->assets = [
         '*.jpg',
         '*.jpeg',
     ],
-    
+
     /**
      * This is used as the URL path to server non-static assets for
      * development, and is also the name of the folder where assets are
      * stored.
      */
     'prefix' => '/assets',
-    
+
     /**
      * Path where the prefix folder will be created, and inside it, compiled
      * assets will finally be stored.
      */
     'compile_path' => self::$publicPath,
-    
+
     # Generate digests for assets URLs
     'digest' => false,
-    
+
     # Has no use.
     'version' => '1.0'
 ];
