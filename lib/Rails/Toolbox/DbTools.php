@@ -3,6 +3,7 @@ namespace Rails\Toolbox;
 
 use Rails\Exception;
 use Rails\ActiveRecord\ActiveRecord;
+use Throwable;
 
 class DbTools
 {
@@ -18,6 +19,8 @@ class DbTools
                     
                     $dbname = $connection->selectValue("SELECT DATABASE()");
                     $tables = $connection->selectValues(sprintf('SHOW TABLES FROM `%s`', $dbname));
+                } catch (Throwable $e) {
+                    continue;
                 } catch (\Exception $e) {
                     continue;
                 }

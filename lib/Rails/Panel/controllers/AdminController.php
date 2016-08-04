@@ -93,6 +93,12 @@ class AdminController extends ApplicationController
                     Rails\Assets\Parser\Javascript\ClosureApi\ClosureApi::errorFile(), $e->getMessage());
                 
                 $this->error = $message;
+            } catch (Throwable $e) {
+                /** 
+                 * If another error occurs, it won't be properly shown because of production config.
+                 */
+                Rails::resetConfig('development');
+                throw $e;
             } catch (\Exception $e) {
                 /** 
                  * If another error occurs, it won't be properly shown because of production config.

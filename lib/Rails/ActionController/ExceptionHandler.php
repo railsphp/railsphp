@@ -3,6 +3,8 @@ namespace Rails\ActionController;
 
 use Rails;
 use Rails\ActionController\Base;
+use Exception;
+use Throwable;
 
 /**
  * Basic use:
@@ -31,7 +33,11 @@ abstract class ExceptionHandler extends Base
         }
     }
     
-    public function handleException(\Exception $e)
+    /**
+     * @param Exception|Throwable $e
+     * @return void
+     */
+    public function handleException($e)
     {
         $this->exception = $e;
         $this->setLayout(false);

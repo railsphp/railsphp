@@ -10,22 +10,26 @@ class Error extends Base
         $_e,
         $_buffer = '',
         $_report;
-    
-    public function __construct(\Exception $e, array $params)
+
+    /**
+     * @param Exception|Error $e
+     * @param array  $params
+     */
+    public function __construct($e, array $params)
     {
         $this->_params = $params;
         $this->_e = $e;
     }
-    
+
     public function _render_view()
     {
         $buffer = '';
         $this->_report = $this->_params['report'];
         unset($this->_params['report']);
-        
+
         if (\Rails::application()->config()->consider_all_requests_local) {
             $no_html = \Rails::cli();
-            
+
             if ($no_html) {
                 $buffer .= strip_tags($this->_report);
                 $buffer .= "\n";
@@ -40,15 +44,15 @@ class Error extends Base
                 $buffer = file_get_contents($file);
             }
         }
-        
+
         $this->_buffer = $buffer;
     }
-    
+
     public function _print_view()
     {
         return $this->_buffer;
     }
-    
+
     private function _header()
     {
 $h = <<<HEREDOC
@@ -72,7 +76,7 @@ $h = <<<HEREDOC
       font-size: 11px;
       overflow: auto;
     }
-    
+
     pre.scroll {
       max-height:400px;
     }
@@ -86,7 +90,7 @@ $h = <<<HEREDOC
 HEREDOC;
         return $h;
     }
-    
+
     private function _footer()
     {
         return "</body>\n</html>";

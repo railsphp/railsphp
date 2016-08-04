@@ -2,6 +2,8 @@
 namespace Rails\Yaml;
 
 use Symfony\Component\Yaml\Yaml as SfYaml;
+use Throwable;
+use Exception;
 
 class Parser
 {
@@ -24,22 +26,32 @@ class Parser
     
     public function read()
     {
+        $error = null;
+        
         try {
             if (function_exists('yaml_parse')) {
                 return yaml_parse_file($this->filepath);
             } else {
                 return SfYaml::parse($this->filepath);
             }
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
+            $error = $e;
+        } catch (Exception $e) {
+            $error = $e;
+        }
+        
+        if ($error) {
             $msg  = sprintf("Error while reading file %s:\n", $this->filepath);
-            $msg .= $e->getMessage();
-            $cn = get_class($e);
+            $msg .= $error->getMessage();
+            $cn = get_class($error);
             throw new $cn($msg);
         }
     }
     
     public function write($contents, array $params = [])
     {
+        $error = null;
+        
         try {
             if (function_exists('yaml_emit')) {
                 $params = array_merge([$contents], $params);
@@ -49,10 +61,16 @@ class Parser
                 $yaml = call_user_func_array('Symfony\Component\Yaml\Yaml::dump', array_merge([$contents], $params));
                 return file_put_contents($this->filepath, $yaml);
             }
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
+            $error = $e;
+        } catch (Exception $e) {
+            $error = $e;
+        }
+        
+        if ($error) {
             $msg  = sprintf("Error while writing file %s:\n", $this->filepath);
-            $msg .= $e->getMessage();
-            $cn = get_class($e);
+            $msg .= $error->getMessage();
+            $cn = get_class($error);
             throw new $cn($msg);
         }
     }
