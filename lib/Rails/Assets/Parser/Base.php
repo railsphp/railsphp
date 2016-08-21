@@ -92,10 +92,10 @@ class Base
         
         $directivesRegexp = implode('|', [
             'require_self',
-            'require_directory [.-\w\s\/]+',
-            'require_tree [.-\w\s\/]+',
-            'require [.-\w\s\/]+',
-            'include [.-\w\s\/]+',
+            'require_directory [\.\-\w\s\/]+',
+            'require_tree [\.\-\w\s\/]+',
+            'require [\.\-\w\s\/]+',
+            'include [\.\-\w\s\/]+',
         ]);
         
         foreach ($lines as $k => $line) {
