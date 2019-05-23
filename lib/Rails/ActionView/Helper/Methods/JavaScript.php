@@ -24,7 +24,7 @@ trait JavaScript
         $attrs['href'] = '#';
         if ($function) {
             $function = trim($function);
-            if (strpos($function, -1) != ';')
+            if (strpos($function, chr(-1)) != ';')
                 $function .= ';';
             $function .= ' return false;';
         } else
@@ -38,7 +38,7 @@ trait JavaScript
     {
         $attrs['href'] = '#';
         $function = trim($function);
-        if (strpos($function, -1) != ';')
+        if (strpos($function, chr(-1)) != ';')
             $function .= ';';
         $function .= ' return false;';
         $attrs['onclick'] = $function;
