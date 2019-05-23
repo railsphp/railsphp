@@ -841,7 +841,7 @@ abstract class Base
                 
                 $primary_key = static::table()->primaryKey();
                 
-                if ($primary_key && count($primary_key) == 1) {
+                if ($primary_key && !empty($primary_key)) {
                     if (!$id) {
                         $this->errors()->addToBase('Couldn\'t retrieve new primary key.');
                         return false;
