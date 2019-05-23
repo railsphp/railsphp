@@ -2,13 +2,13 @@
     "name": "railsphp/railsphp",
     "require": {
         "php": ">=5.4.0",
-        "zendframework/zend-validator": "2.3.*",
-        "zendframework/zend-log": "2.3.*",
-        "zendframework/zend-mail": "2.3.*",
-        "zendframework/zend-console": "2.3.*",
-        "zendframework/zend-db": "2.3.*",
-        "symfony/yaml": "2.3.*",
-        "leafo/scssphp": "0.0.8",
+        "zendframework/zend-validator": "2.*",
+        "zendframework/zend-log": "2.*",
+        "zendframework/zend-mail": "2.*",
+        "zendframework/zend-console": "2.*",
+        "zendframework/zend-db": "2.*",
+        "symfony/yaml": "2.6.*",
+        "leafo/scssphp": "0.0.15",
         "toopay/assetic-minifier": "1.3.*"
     },
     "autoload": {
@@ -17,3 +17,4 @@
         }
     }
 }
+
