@@ -7,7 +7,7 @@
         "zendframework/zend-mail": "2.*",
         "zendframework/zend-console": "2.*",
         "zendframework/zend-db": "2.*",
-        "symfony/yaml": "2.6.*",
+        "symfony/yaml": "3.3.*",
         "leafo/scssphp": "0.0.15",
         "toopay/assetic-minifier": "1.3.*"
     },
