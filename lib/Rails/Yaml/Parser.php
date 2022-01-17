@@ -8,38 +8,38 @@ use Exception;
 class Parser
 {
     protected $filepath;
-    
+
     static public function readFile($filepath)
     {
         return (new self($filepath))->read();
     }
-    
+
     static public function writeFile($filepath, $contents)
     {
         return (new self($filepath))->write($contents);
     }
-    
+
     public function __construct($filepath)
     {
         $this->filepath = $filepath;
     }
-    
+
     public function read()
     {
         $error = null;
-        
+
         try {
             if (function_exists('yaml_parse')) {
                 return yaml_parse_file($this->filepath);
             } else {
-                return SfYaml::parse($this->filepath);
+                return SfYaml::parse(file_get_contents($this->filepath));
             }
         } catch (Throwable $e) {
             $error = $e;
         } catch (Exception $e) {
             $error = $e;
         }
-        
+
         if ($error) {
             $msg  = sprintf("Error while reading file %s:\n", $this->filepath);
             $msg .= $error->getMessage();
@@ -47,11 +47,11 @@ class Parser
             throw new $cn($msg);
         }
     }
-    
+
     public function write($contents, array $params = [])
     {
         $error = null;
-        
+
         try {
             if (function_exists('yaml_emit')) {
                 $params = array_merge([$contents], $params);
@@ -66,7 +66,7 @@ class Parser
         } catch (Exception $e) {
             $error = $e;
         }
-        
+
         if ($error) {
             $msg  = sprintf("Error while writing file %s:\n", $this->filepath);
             $msg .= $error->getMessage();
